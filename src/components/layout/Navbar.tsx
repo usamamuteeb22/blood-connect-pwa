@@ -1,0 +1,139 @@
+
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Bell, Menu, User, X } from "lucide-react";
+
+const Navbar = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Mock toggle for demo purposes
+  const toggleLogin = () => setIsLoggedIn(!isLoggedIn);
+  
+  return (
+    <nav className="bg-white shadow-sm py-4">
+      <div className="container mx-auto px-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <Link to="/" className="flex items-center">
+            <div className="h-8 w-8 rounded-full bg-blood mr-2 animate-pulse-blood"></div>
+            <h1 className="text-2xl font-bold text-blood">
+              One<span className="text-gray-800">Drop</span>
+            </h1>
+          </Link>
+        </div>
+        
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center space-x-6">
+          <Link to="/" className="text-gray-700 hover:text-blood transition-colors">
+            Home
+          </Link>
+          <Link to="/donate" className="text-gray-700 hover:text-blood transition-colors">
+            Donate
+          </Link>
+          <Link to="/request" className="text-gray-700 hover:text-blood transition-colors">
+            Request
+          </Link>
+          <Link to="/about" className="text-gray-700 hover:text-blood transition-colors">
+            About
+          </Link>
+          
+          {isLoggedIn ? (
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-blood"></span>
+              </Button>
+              <Link to="/dashboard">
+                <Button variant="outline" className="border-blood text-blood hover:bg-blood hover:text-white">
+                  Dashboard
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button variant="ghost" size="icon" className="rounded-full bg-gray-100">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex space-x-2">
+              <Link to="/auth">
+                <Button variant="outline" className="border-blood text-blood hover:bg-blood hover:text-white">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/auth?mode=signup">
+                <Button className="bg-blood hover:bg-blood-600 text-white">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+        
+        {/* Mobile Menu Button */}
+        <button 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden rounded-md p-2 text-gray-700"
+        >
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      </div>
+      
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white shadow-lg absolute top-16 inset-x-0 z-50 animate-fade-in">
+          <div className="container mx-auto px-4 py-3 flex flex-col space-y-3">
+            <Link to="/" className="text-gray-700 hover:text-blood p-2 transition-colors">
+              Home
+            </Link>
+            <Link to="/donate" className="text-gray-700 hover:text-blood p-2 transition-colors">
+              Donate
+            </Link>
+            <Link to="/request" className="text-gray-700 hover:text-blood p-2 transition-colors">
+              Request
+            </Link>
+            <Link to="/about" className="text-gray-700 hover:text-blood p-2 transition-colors">
+              About
+            </Link>
+            
+            {isLoggedIn ? (
+              <>
+                <Link to="/notifications" className="text-gray-700 hover:text-blood p-2 transition-colors">
+                  Notifications
+                </Link>
+                <Link to="/dashboard" className="text-gray-700 hover:text-blood p-2 transition-colors">
+                  Dashboard
+                </Link>
+                <Link to="/profile" className="text-gray-700 hover:text-blood p-2 transition-colors">
+                  Profile
+                </Link>
+                <button 
+                  onClick={toggleLogin}
+                  className="text-left text-blood hover:text-blood-700 p-2 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col space-y-2 pt-2">
+                <Link to="/auth">
+                  <Button variant="outline" className="w-full border-blood text-blood">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup">
+                  <Button className="w-full bg-blood hover:bg-blood-600 text-white">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default Navbar;
