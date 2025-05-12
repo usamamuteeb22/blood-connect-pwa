@@ -1,13 +1,20 @@
 
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 import RequestForm from "@/components/donation/RequestForm";
 
 const Donate = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("donate");
+  
   // Eligibility criteria
   const eligibilityCriteria = [
     { text: "You must be at least 18 years old", icon: <Check className="h-4 w-4" /> },
@@ -35,6 +42,59 @@ const Donate = () => {
       description: "Rest and enjoy light refreshments to help your body recover",
     },
   ];
+
+  // Handle button clicks
+  const handleCheckEligibility = () => {
+    toast({
+      title: "Eligibility Check",
+      description: "Based on the criteria, you appear to be eligible to donate blood. Please consult with a healthcare professional for a final determination.",
+    });
+  };
+
+  const handleFullEligibilityCheck = () => {
+    toast({
+      title: "Full Eligibility Guide",
+      description: "Please answer a few questions to determine your eligibility to donate blood.",
+    });
+    // In a real app, this would open a modal or navigate to a detailed eligibility questionnaire
+  };
+
+  const handleFindDonationCenters = () => {
+    toast({
+      title: "Donation Centers",
+      description: "We're finding donation centers near your location.",
+    });
+    // In a real app, this would show a map of nearby donation centers
+  };
+
+  const handleScheduleDonation = () => {
+    toast({
+      title: "Schedule Donation",
+      description: "Please sign in to schedule your blood donation appointment.",
+    });
+    navigate("/auth");
+  };
+
+  const handleEmergencyRequest = () => {
+    toast({
+      variant: "destructive",
+      title: "Emergency Request Initiated",
+      description: "Our team will contact you immediately for this emergency blood request.",
+    });
+    setActiveTab("request");
+  };
+
+  const handleViewPastRequests = () => {
+    toast({
+      title: "Authentication Required",
+      description: "Please sign in to view your past blood requests.",
+    });
+    navigate("/auth");
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
   
   return (
     <div className="flex flex-col min-h-screen">
@@ -49,7 +109,10 @@ const Donate = () => {
             <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">
               Your blood donation can help save up to three lives. Join thousands of donors and make a difference today.
             </p>
-            <Button className="bg-blood hover:bg-blood-600 text-white px-8 py-6 text-lg">
+            <Button 
+              className="bg-blood hover:bg-blood-600 text-white px-8 py-6 text-lg"
+              onClick={handleCheckEligibility}
+            >
               Check Eligibility
             </Button>
           </div>
@@ -58,7 +121,7 @@ const Donate = () => {
         {/* Main Content */}
         <section className="py-16 px-4">
           <div className="container mx-auto">
-            <Tabs defaultValue="donate" className="space-y-8">
+            <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="space-y-8">
               <div className="flex justify-center">
                 <TabsList className="grid w-full max-w-lg grid-cols-2">
                   <TabsTrigger value="donate">I Want to Donate</TabsTrigger>
@@ -87,7 +150,10 @@ const Donate = () => {
                             </li>
                           ))}
                         </ul>
-                        <Button className="w-full mt-6 bg-blood hover:bg-blood-600">
+                        <Button 
+                          className="w-full mt-6 bg-blood hover:bg-blood-600"
+                          onClick={handleFullEligibilityCheck}
+                        >
                           Check Full Eligibility
                         </Button>
                       </CardContent>
@@ -160,10 +226,17 @@ const Donate = () => {
                           Ready to donate? Register here and we'll help you schedule your donation at a nearby blood bank or donation center.
                         </p>
                         <div className="flex space-x-3">
-                          <Button className="flex-1 bg-blood hover:bg-blood-600">
+                          <Button 
+                            className="flex-1 bg-blood hover:bg-blood-600"
+                            onClick={handleFindDonationCenters}
+                          >
                             Find Donation Centers
                           </Button>
-                          <Button className="flex-1" variant="outline">
+                          <Button 
+                            className="flex-1" 
+                            variant="outline"
+                            onClick={handleScheduleDonation}
+                          >
                             Schedule Now
                           </Button>
                         </div>
@@ -189,7 +262,10 @@ const Donate = () => {
                         <p className="text-sm text-gray-600">
                           For life-threatening situations requiring immediate blood transfusion, please use our emergency channel.
                         </p>
-                        <Button className="w-full bg-red-600 hover:bg-red-700">
+                        <Button 
+                          className="w-full bg-red-600 hover:bg-red-700"
+                          onClick={handleEmergencyRequest}
+                        >
                           Emergency Request
                         </Button>
                       </CardContent>
@@ -203,7 +279,12 @@ const Donate = () => {
                       <CardContent>
                         <div className="p-12 flex flex-col items-center justify-center text-center">
                           <p className="text-gray-500 mb-4">You don't have any active blood requests</p>
-                          <Button variant="outline">View Past Requests</Button>
+                          <Button 
+                            variant="outline"
+                            onClick={handleViewPastRequests}
+                          >
+                            View Past Requests
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

@@ -1,30 +1,37 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   const features = [
     {
       title: "Find Donors",
       description: "Connect with compatible donors in your area",
       icon: "🔍",
+      link: "/donate",
     },
     {
       title: "Request Blood",
       description: "Submit requests for specific blood types",
       icon: "🩸",
+      link: "/request",
     },
     {
       title: "Real-time Tracking",
       description: "Track the status of blood donations and requests",
       icon: "🔔",
+      link: "/dashboard",
     },
     {
       title: "Hospital Integration",
       description: "Connect with verified hospitals and blood banks",
       icon: "🏥",
+      link: "/about",
     },
   ];
 
@@ -34,6 +41,10 @@ const Index = () => {
     { number: "500+", label: "Partner Hospitals" },
     { number: "98%", label: "Request Success Rate" },
   ];
+
+  const handleFeatureClick = (link: string) => {
+    navigate(link);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -84,7 +95,8 @@ const Index = () => {
               {features.map((feature, index) => (
                 <div
                   key={index}
-                  className="p-6 border rounded-lg shadow-sm hover:shadow-md transition-shadow bg-white"
+                  className="p-6 border rounded-lg shadow-sm hover:shadow-md transition-shadow bg-white cursor-pointer"
+                  onClick={() => handleFeatureClick(feature.link)}
                 >
                   <div className="text-4xl mb-4">{feature.icon}</div>
                   <h3 className="font-bold text-xl mb-2">{feature.title}</h3>
