@@ -6,18 +6,18 @@ interface PrivateRouteProps {
   children: React.ReactNode;
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
+const PrivateRoute = ({ children }: PrivateRouteProps) => {
   const { isAuthenticated, loading } = useAuth();
-
+  
+  // Show loading or redirect if not authenticated
   if (loading) {
-    // You can show a loading spinner here
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-
+  
   if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/auth" />;
   }
-
+  
   return <>{children}</>;
 };
 

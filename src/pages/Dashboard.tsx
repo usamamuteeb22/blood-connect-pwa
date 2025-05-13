@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -76,19 +75,21 @@ const Dashboard = () => {
         .single();
         
       if (donor && !error) {
-        setUserDonor(donor);
+        setUserDonor(donor as DonorType);
         setNextEligibleDate(new Date(donor.next_eligible_date));
       }
       
       // Count completed donations
-      const { data: donationsCount, error: countError } = await supabase
-        .from('donations')
-        .select('id', { count: 'exact' })
-        .eq('donor_id', donor?.id || '')
-        .eq('status', 'completed');
-        
-      if (!countError) {
-        setDonationCount(donationsCount?.length || 0);
+      if (donor) {
+        const { data: donationsData, error: countError } = await supabase
+          .from('donations')
+          .select('id')
+          .eq('donor_id', donor.id)
+          .eq('status', 'completed');
+          
+        if (!countError && donationsData) {
+          setDonationCount(donationsData.length || 0);
+        }
       }
     };
     
@@ -101,7 +102,7 @@ const Dashboard = () => {
         .order('created_at', { ascending: false });
         
       if (requests && !error) {
-        setUserRequests(requests);
+        setUserRequests(requests as RequestType[]);
       }
     };
     
@@ -121,7 +122,7 @@ const Dashboard = () => {
           .order('created_at', { ascending: false });
           
         if (requests && !error) {
-          setDonorRequests(requests);
+          setDonorRequests(requests as RequestType[]);
         }
       }
     };
@@ -142,7 +143,7 @@ const Dashboard = () => {
           .order('date', { ascending: false });
           
         if (donations && !error) {
-          setUserDonations(donations);
+          setUserDonations(donations as DonationType[]);
         }
       }
     };
@@ -196,7 +197,7 @@ const Dashboard = () => {
         .single();
         
       if (newDonor) {
-        setUserDonor(newDonor);
+        setUserDonor(newDonor as DonorType);
         setNextEligibleDate(new Date(newDonor.next_eligible_date));
       }
       
@@ -261,7 +262,7 @@ const Dashboard = () => {
         .order('created_at', { ascending: false });
         
       if (requests) {
-        setUserRequests(requests);
+        setUserRequests(requests as RequestType[]);
       }
     } catch (error: any) {
       toast({
@@ -339,7 +340,7 @@ const Dashboard = () => {
           .order('date', { ascending: false });
           
         if (donations) {
-          setUserDonations(donations);
+          setUserDonations(donations as DonationType[]);
         }
         
         toast({

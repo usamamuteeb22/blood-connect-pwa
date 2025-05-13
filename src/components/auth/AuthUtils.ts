@@ -18,22 +18,28 @@ export async function getCurrentUser() {
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  // This is just a placeholder function
-  // In a real implementation, we would fetch the profile from a profiles table
-  
   try {
-    const { data, error } = await supabase.auth.getUser();
+    // First try to get user from auth
+    const { data: authData, error: authError } = await supabase.auth.getUser();
     
-    if (error || !data.user) {
+    if (authError || !authData.user) {
       return null;
     }
     
+    // Then try to get donor profile if available
+    const { data: donorData, error: donorError } = await supabase
+      .from('donors')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+      
+    // Create profile from combined data
     return {
-      id: data.user.id,
-      name: data.user.user_metadata?.full_name || null,
-      email: data.user.email,
-      avatar_url: data.user.user_metadata?.avatar_url || null,
-      blood_type: data.user.user_metadata?.blood_type || null,
+      id: authData.user.id,
+      name: donorData?.name || authData.user.user_metadata?.full_name || null,
+      email: authData.user.email,
+      avatar_url: authData.user.user_metadata?.avatar_url || null,
+      blood_type: donorData?.blood_type || authData.user.user_metadata?.blood_type || null,
     };
   } catch (error) {
     console.error('Error fetching user profile:', error);
