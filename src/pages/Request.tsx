@@ -1,12 +1,18 @@
 
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import RequestForm from "@/components/donation/RequestForm";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import StandardRequestForm from "@/components/request/StandardRequestForm";
 
 const Request = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   const bloodTypeInfo = [
     {
       type: "A+",
@@ -57,19 +63,19 @@ const Request = () => {
     },
     {
       question: "Do I need a doctor's prescription to request blood?",
-      answer: "Yes, all blood requests require a valid prescription or medical documentation from a licensed healthcare provider.",
+      answer: "No, our platform is designed for peer-to-peer blood donation. You can request blood directly from donors without a prescription.",
     },
     {
       question: "Can I request blood for someone else?",
-      answer: "Yes, you can request blood on behalf of a family member or friend. You'll need to provide their medical information and documentation.",
+      answer: "Yes, you can request blood on behalf of a family member or friend. Just provide their details in the request form.",
     },
     {
       question: "What information do I need to provide for a blood request?",
-      answer: "You'll need to provide the patient's name, blood type, quantity needed, reason for transfusion, hospital name, doctor's contact information, and medical documentation.",
+      answer: "You'll need to provide your name, blood type, contact information, city, and address where the donation is needed.",
     },
     {
       question: "Is there a fee for using OneDrop's blood request service?",
-      answer: "Our platform is free to use. However, there may be costs associated with blood processing, testing, and delivery which vary by location and healthcare facility.",
+      answer: "Our platform is free to use. We connect donors and recipients directly without any intermediary fees.",
     },
   ];
 
@@ -86,14 +92,18 @@ const Request = () => {
             <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">
               Need blood urgently? Our platform connects you with compatible donors quickly and efficiently.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button className="bg-blood hover:bg-blood-600 text-white">
-                Standard Request
-              </Button>
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                Emergency Request
-              </Button>
-            </div>
+            <Button 
+              className="bg-blood hover:bg-blood-600 text-white"
+              onClick={() => {
+                if (isAuthenticated) {
+                  navigate("/dashboard");
+                } else {
+                  navigate("/auth");
+                }
+              }}
+            >
+              {isAuthenticated ? "View Your Requests" : "Sign In to Request Blood"}
+            </Button>
           </div>
         </section>
         
@@ -105,7 +115,7 @@ const Request = () => {
               <p className="text-gray-700 mb-6">
                 Fill out the form below with accurate information to help us find the right blood match for your needs.
               </p>
-              <RequestForm />
+              <StandardRequestForm />
             </div>
             
             <div className="space-y-8">
@@ -116,8 +126,27 @@ const Request = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="p-12 flex flex-col items-center justify-center text-center">
-                    <p className="text-gray-500 mb-4">You don't have any active blood requests</p>
-                    <Button variant="outline">Sign In to View Your Requests</Button>
+                    {isAuthenticated ? (
+                      <>
+                        <p className="text-gray-500 mb-4">View all your blood requests in one place</p>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => navigate("/dashboard")}
+                        >
+                          Go to Dashboard
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-gray-500 mb-4">Sign in to view your blood requests</p>
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigate("/auth")}
+                        >
+                          Sign In
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>

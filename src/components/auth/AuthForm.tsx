@@ -1,26 +1,27 @@
 
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type UserRole = "donor" | "recipient" | "hospital" | "admin";
+type UserRole = "donor" | "recipient" | "hospital";
 
 const AuthForm = () => {
   const [searchParams] = useSearchParams();
   const defaultMode = searchParams.get("mode") === "signup" ? "signup" : "signin";
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
   
   const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [bloodType, setBloodType] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("donor");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -29,28 +30,17 @@ const AuthForm = () => {
     setIsLoading(true);
     
     try {
-      // Simulated authentication
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       if (mode === "signin") {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
+        await signIn(email, password);
       } else {
-        toast({
-          title: "Account created!",
-          description: "Your account has been created successfully.",
-        });
+        const userData = {
+          name,
+          phoneNumber,
+          bloodType,
+          role: selectedRole
+        };
+        await signUp(email, password, userData);
       }
-      
-      navigate("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Authentication failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +51,8 @@ const AuthForm = () => {
     { value: "recipient", label: "Recipient" },
     { value: "hospital", label: "Hospital" },
   ];
+
+  const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -154,7 +146,21 @@ const AuthForm = () => {
                   placeholder="+1 (123) 456-7890"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bloodType">Blood Type</Label>
+                <Select value={bloodType} onValueChange={setBloodType} required>
+                  <SelectTrigger id="bloodType">
+                    <SelectValue placeholder="Select blood type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bloodTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Register as</Label>

@@ -1,30 +1,74 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, MapPin, Bell } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-const LocationMap = () => {
+interface LocationMapProps {
+  onDonorSelect?: (donor: any) => void;
+}
+
+interface DonorType {
+  id: string;
+  name: string;
+  blood_type: string;
+  city: string;
+  address: string;
+  phone: string;
+  email: string;
+  next_eligible_date: string;
+}
+
+const LocationMap = ({ onDonorSelect }: LocationMapProps) => {
   const [bloodTypeFilter, setBloodTypeFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<string>("map");
+  const [donors, setDonors] = useState<DonorType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   
-  // Mock nearby donors/hospitals data
-  const nearbyPoints = [
-    { id: 1, type: "donor", name: "John Doe", bloodType: "O+", distance: "1.2 km", available: true },
-    { id: 2, type: "donor", name: "Jane Smith", bloodType: "AB-", distance: "2.5 km", available: true },
-    { id: 3, type: "donor", name: "Robert Brown", bloodType: "A+", distance: "3.7 km", available: false },
-    { id: 4, type: "hospital", name: "City General Hospital", distance: "2.1 km", emergency: false },
-    { id: 5, type: "hospital", name: "Medical Center", distance: "4.3 km", emergency: true },
-  ];
+  useEffect(() => {
+    const fetchDonors = async () => {
+      setIsLoading(true);
+      
+      try {
+        let query = supabase.from('donors').select('*');
+        
+        // Apply blood type filter if needed
+        if (bloodTypeFilter !== "all") {
+          query = query.eq('blood_type', bloodTypeFilter);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        if (data) {
+          setDonors(data);
+        }
+      } catch (error) {
+        console.error("Error fetching donors:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchDonors();
+  }, [bloodTypeFilter]);
   
-  const filteredPoints = bloodTypeFilter === "all" 
-    ? nearbyPoints 
-    : nearbyPoints.filter(point => 
-        point.type !== "donor" || point.bloodType === bloodTypeFilter
-      );
+  const handleSelectDonor = (donor: DonorType) => {
+    if (onDonorSelect) {
+      onDonorSelect(donor);
+    }
+  };
+  
+  const isDonorEligible = (nextEligibleDate: string) => {
+    const today = new Date();
+    const eligibleDate = new Date(nextEligibleDate);
+    return today >= eligibleDate;
+  };
   
   return (
     <Card className="w-full">
@@ -65,63 +109,66 @@ const LocationMap = () => {
                 Map integration will show donor locations and hospitals
               </p>
             </div>
-            {/* Placeholder markers */}
-            <div className="absolute left-1/4 top-1/3 w-8 h-8 rounded-full bg-blood text-white flex items-center justify-center text-xs font-bold">
-              O+
-            </div>
-            <div className="absolute right-1/3 top-1/2 w-8 h-8 rounded-full bg-blood text-white flex items-center justify-center text-xs font-bold">
-              A+
-            </div>
-            <div className="absolute left-1/2 bottom-1/4 w-10 h-10 rounded-full bg-white border-2 border-blood text-blood flex items-center justify-center text-xs font-bold">
-              H
-            </div>
+            {/* Placeholder markers for donors */}
+            {donors.slice(0, 5).map((donor, index) => {
+              // Calculate random positions for demonstration
+              const left = 20 + (index * 15) + Math.random() * 10;
+              const top = 20 + (index * 10) + Math.random() * 30;
+              
+              return (
+                <div 
+                  key={donor.id}
+                  className="absolute w-8 h-8 rounded-full bg-blood text-white flex items-center justify-center text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
+                  style={{ left: `${left}%`, top: `${top}%` }}
+                  onClick={() => handleSelectDonor(donor)}
+                >
+                  {donor.blood_type}
+                </div>
+              );
+            })}
           </div>
         </TabsContent>
         <TabsContent value="list" className="mt-0">
-          <div className="border rounded-md divide-y">
-            {filteredPoints.map(point => (
-              <div key={point.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                <div className="flex items-center">
-                  <div className={`${
-                    point.type === "donor" 
-                      ? "bg-blood-50 text-blood" 
-                      : "bg-blue-50 text-blue-600"
-                  } w-10 h-10 rounded-full flex items-center justify-center mr-4`}>
-                    {point.type === "donor" ? <User className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
-                  </div>
-                  <div>
-                    <p className="font-medium">{point.name}</p>
-                    <div className="flex items-center text-sm text-gray-500">
-                      {point.type === "donor" && (
+          {isLoading ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500">Loading donors...</p>
+            </div>
+          ) : donors.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500">No donors found matching your criteria</p>
+            </div>
+          ) : (
+            <div className="border rounded-md divide-y">
+              {donors.map(donor => (
+                <div 
+                  key={donor.id} 
+                  className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleSelectDonor(donor)}
+                >
+                  <div className="flex items-center">
+                    <div className="bg-blood-50 text-blood w-10 h-10 rounded-full flex items-center justify-center mr-4">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{donor.name}</p>
+                      <div className="flex items-center text-sm text-gray-500">
                         <span className="mr-2 px-1.5 bg-gray-100 rounded text-xs font-medium">
-                          {point.bloodType}
+                          {donor.blood_type}
                         </span>
-                      )}
-                      <MapPin className="h-3 w-3 mr-1" />
-                      <span>{point.distance}</span>
-                      {point.type === "hospital" && point.emergency && (
-                        <span className="ml-2 text-xs font-medium text-red-500">
-                          URGENT NEED
-                        </span>
-                      )}
+                        <MapPin className="h-3 w-3 mr-1" />
+                        <span>{donor.city}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div>
-                  {point.type === "donor" && (
+                  <div>
                     <div className={`w-3 h-3 rounded-full ${
-                      point.available ? "bg-green-500" : "bg-gray-300"
+                      isDonorEligible(donor.next_eligible_date) ? "bg-green-500" : "bg-amber-500"
                     }`} />
-                  )}
-                  {point.type === "hospital" && (
-                    <button className="text-sm text-blood hover:text-blood-700 hover:underline">
-                      Details
-                    </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </CardContent>
     </Card>

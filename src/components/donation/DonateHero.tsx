@@ -1,26 +1,45 @@
 
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface DonateHeroProps {
-  onCheckEligibility: () => void;
+  onCheckEligibility?: () => void;
 }
 
 const DonateHero = ({ onCheckEligibility }: DonateHeroProps) => {
+  const navigate = useNavigate();
+  
+  const handleCheckEligibility = () => {
+    if (onCheckEligibility) {
+      onCheckEligibility();
+    }
+    // Navigate to eligibility form
+    navigate("/donate/eligibility");
+  };
+  
   return (
-    <section className="py-16 bg-red-50 px-4">
+    <section className="relative bg-red-50 py-16 px-4">
       <div className="container mx-auto text-center">
         <h1 className="text-4xl font-bold mb-4">
-          Become a <span className="text-blood">Life Saver</span>
+          Become a <span className="text-blood">Lifesaver</span>
         </h1>
         <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">
-          Your blood donation can help save up to three lives. Join thousands of donors and make a difference today.
+          Your blood donation can save up to 3 lives. Join our community of donors and make a difference today.
         </p>
-        <Button 
+        <Button
+          onClick={handleCheckEligibility}
           className="bg-blood hover:bg-blood-600 text-white px-8 py-6 text-lg"
-          onClick={onCheckEligibility}
         >
-          Check Eligibility
+          Check Your Eligibility
         </Button>
+      </div>
+      
+      {/* Decorative elements */}
+      <div className="hidden lg:block absolute top-1/2 left-12 transform -translate-y-1/2">
+        <div className="h-40 w-40 rounded-full bg-blood/10 animate-pulse-slow"></div>
+      </div>
+      <div className="hidden lg:block absolute top-1/4 right-16">
+        <div className="h-24 w-24 rounded-full bg-blood/10 animate-pulse-slow"></div>
       </div>
     </section>
   );

@@ -2,14 +2,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Bell, Menu, User, X } from "lucide-react";
+import { Bell, Menu, User, X, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isAuthenticated, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Mock toggle for demo purposes
-  const toggleLogin = () => setIsLoggedIn(!isLoggedIn);
   
   return (
     <nav className="bg-white shadow-sm py-4">
@@ -38,7 +36,7 @@ const Navbar = () => {
             About
           </Link>
           
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
@@ -54,6 +52,9 @@ const Navbar = () => {
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
+              <Button variant="ghost" size="icon" onClick={() => signOut()}>
+                <LogOut className="h-5 w-5" />
+              </Button>
             </div>
           ) : (
             <div className="flex space-x-2">
@@ -97,7 +98,7 @@ const Navbar = () => {
               About
             </Link>
             
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 <Link to="/notifications" className="text-gray-700 hover:text-blood p-2 transition-colors">
                   Notifications
@@ -109,7 +110,7 @@ const Navbar = () => {
                   Profile
                 </Link>
                 <button 
-                  onClick={toggleLogin}
+                  onClick={() => signOut()}
                   className="text-left text-blood hover:text-blood-700 p-2 transition-colors"
                 >
                   Sign Out
