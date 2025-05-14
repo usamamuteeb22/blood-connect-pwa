@@ -15,21 +15,41 @@ const DonorRegistrationDialog = ({ open, onOpenChange }: DonorRegistrationDialog
   const { user } = useAuth();
   const { toast } = useToast();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDonorRegistration = async () => {
-    if (!user) return;
+    if (!user) {
+      setError("You must be logged in to register as a donor");
+      return;
+    }
     
     setIsRegistering(true);
+    setError(null);
     
     try {
       // Get user metadata from auth
-      const { data: { user: userData } } = await supabase.auth.getUser();
+      const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        throw new Error("Failed to fetch user data: " + userError.message);
+      }
       
       if (!userData || !userData.user_metadata) {
-        throw new Error("User data not available");
+        throw new Error("User data not available. Please complete your profile first.");
       }
       
       const metadata = userData.user_metadata;
+      
+      // Check if donor already exists
+      const { data: existingDonor } = await supabase
+        .from('donors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (existingDonor) {
+        throw new Error("You are already registered as a blood donor");
+      }
       
       // Register as donor
       const { error } = await supabase
@@ -59,6 +79,7 @@ const DonorRegistrationDialog = ({ open, onOpenChange }: DonorRegistrationDialog
       
       onOpenChange(false);
     } catch (error: any) {
+      setError(error.message || "Failed to register as donor.");
       toast({
         title: "Registration Failed",
         description: error.message || "Failed to register as donor.",
@@ -78,6 +99,13 @@ const DonorRegistrationDialog = ({ open, onOpenChange }: DonorRegistrationDialog
             Are you sure you want to register as a blood donor? This will make your profile visible to those in need of blood donations.
           </DialogDescription>
         </DialogHeader>
+        
+        {error && (
+          <div className="bg-destructive/10 border border-destructive text-destructive p-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+        
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button 

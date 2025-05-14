@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
@@ -25,14 +25,98 @@ const EligibilityForm = () => {
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    // Validate name
+    if (!name.trim()) {
+      newErrors.name = "Name is required";
+    }
+    
+    // Validate email
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    // Validate phone
+    if (!phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\d{10,}$/.test(phone.replace(/[^\d]/g, ''))) {
+      newErrors.phone = "Please enter a valid phone number (at least 10 digits)";
+    }
+    
+    // Validate blood group
+    if (!bloodGroup) {
+      newErrors.bloodGroup = "Blood group selection is required";
+    }
+    
+    // Validate age
+    const ageValue = parseInt(age);
+    if (!age) {
+      newErrors.age = "Age is required";
+    } else if (isNaN(ageValue)) {
+      newErrors.age = "Age must be a number";
+    } else if (ageValue < 18) {
+      newErrors.age = "You must be at least 18 years old to donate blood";
+    }
+    
+    // Validate weight
+    const weightValue = parseInt(weight);
+    if (!weight) {
+      newErrors.weight = "Weight is required";
+    } else if (isNaN(weightValue)) {
+      newErrors.weight = "Weight must be a number";
+    } else if (weightValue < 50) {
+      newErrors.weight = "You must weigh at least 50kg to donate blood";
+    }
+    
+    // Validate city
+    if (!city.trim()) {
+      newErrors.city = "City is required";
+    }
+    
+    // Validate address
+    if (!address.trim()) {
+      newErrors.address = "Address is required";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (parseInt(age) < 18 || parseInt(weight) < 50) {
+    if (!validateForm()) {
+      // Form has validation errors
+      toast({
+        title: "Form Validation Failed",
+        description: "Please correct the highlighted errors to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const ageValue = parseInt(age);
+    const weightValue = parseInt(weight);
+    
+    if (ageValue < 18 || weightValue < 50) {
+      let eligibilityError = "";
+      if (ageValue < 18 && weightValue < 50) {
+        eligibilityError = "You must be at least 18 years old and weigh at least 50kg to donate blood.";
+      } else if (ageValue < 18) {
+        eligibilityError = "You must be at least 18 years old to donate blood.";
+      } else {
+        eligibilityError = "You must weigh at least 50kg to donate blood.";
+      }
+      
       toast({
         title: "Eligibility Check Failed",
-        description: "You must be at least 18 years old and weigh at least 50kg to donate blood.",
+        description: eligibilityError,
         variant: "destructive",
       });
       return;
@@ -51,8 +135,8 @@ const EligibilityForm = () => {
             email, 
             phone, 
             blood_type: bloodGroup,
-            age: parseInt(age),
-            weight: parseInt(weight),
+            age: ageValue,
+            weight: weightValue,
             city,
             address,
             next_eligible_date: new Date(new Date().setDate(new Date().getDate() + 90)).toISOString(),
@@ -113,6 +197,7 @@ const EligibilityForm = () => {
                   setCity={setCity}
                   address={address}
                   setAddress={setAddress}
+                  errors={errors}
                 />
                 
                 <EligibilityNotice />
