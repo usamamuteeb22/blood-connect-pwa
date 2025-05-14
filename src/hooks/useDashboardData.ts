@@ -3,6 +3,87 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Donor, BloodRequest, Donation } from "@/types/custom";
+import { toast } from "@/components/ui/use-toast";
+
+// Helper function to fetch donor profile
+const fetchDonorProfile = async (userId: string) => {
+  const { data: donor, error } = await supabase
+    .from('donors')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+    
+  if (error) {
+    console.error("Error fetching donor profile:", error);
+    return null;
+  }
+  
+  return donor as Donor | null;
+};
+
+// Helper function to count completed donations
+const fetchDonationCount = async (donorId: string) => {
+  const { data: donationsData, error } = await supabase
+    .from('donations')
+    .select('id')
+    .eq('donor_id', donorId)
+    .eq('status', 'completed');
+    
+  if (error) {
+    console.error("Error fetching donation count:", error);
+    return 0;
+  }
+  
+  return donationsData?.length || 0;
+};
+
+// Helper function to fetch user requests
+const fetchUserRequests = async (userId: string) => {
+  const { data: requests, error } = await supabase
+    .from('blood_requests')
+    .select('*')
+    .eq('requester_id', userId)
+    .order('created_at', { ascending: false });
+    
+  if (error) {
+    console.error("Error fetching user requests:", error);
+    return [];
+  }
+  
+  return requests as BloodRequest[] || [];
+};
+
+// Helper function to fetch donor requests
+const fetchDonorRequests = async (donorId: string) => {
+  const { data: requests, error } = await supabase
+    .from('blood_requests')
+    .select('*')
+    .eq('donor_id', donorId)
+    .order('created_at', { ascending: false });
+    
+  if (error) {
+    console.error("Error fetching donor requests:", error);
+    return [];
+  }
+  
+  return requests as BloodRequest[] || [];
+};
+
+// Helper function to fetch donations
+const fetchDonations = async (donorId: string) => {
+  const { data: donations, error } = await supabase
+    .from('donations')
+    .select('*')
+    .eq('donor_id', donorId)
+    .order('date', { ascending: false });
+    
+  if (error) {
+    console.error("Error fetching donations:", error);
+    return [];
+  }
+  
+  return donations as Donation[] || [];
+};
 
 export const useDashboardData = () => {
   const { user } = useAuth();
@@ -13,97 +94,55 @@ export const useDashboardData = () => {
   const [donorRequests, setDonorRequests] = useState<BloodRequest[]>([]);
   const [donationCount, setDonationCount] = useState(0);
   const [nextEligibleDate, setNextEligibleDate] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
   
   // Fetch user data
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
-    const fetchDonorProfile = async () => {
-      // Check if user is registered as a donor
-      const { data: donor, error } = await supabase
-        .from('donors')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true);
         
-      if (donor && !error) {
-        setUserDonor(donor as Donor);
-        setNextEligibleDate(new Date(donor.next_eligible_date));
-      }
-      
-      // Count completed donations
-      if (donor) {
-        const { data: donationsData, error: countError } = await supabase
-          .from('donations')
-          .select('id')
-          .eq('donor_id', donor.id)
-          .eq('status', 'completed');
+        // Fetch donor profile
+        const donor = await fetchDonorProfile(user.id);
+        
+        if (donor) {
+          setUserDonor(donor);
+          setNextEligibleDate(new Date(donor.next_eligible_date));
           
-        if (!countError && donationsData) {
-          setDonationCount(donationsData.length || 0);
-        }
-      }
-    };
-    
-    const fetchUserRequests = async () => {
-      // Get requests made by this user
-      const { data: requests, error } = await supabase
-        .from('blood_requests')
-        .select('*')
-        .eq('requester_id', user.id)
-        .order('created_at', { ascending: false });
-        
-      if (requests && !error) {
-        setUserRequests(requests as BloodRequest[]);
-      }
-    };
-    
-    const fetchDonorRequests = async () => {
-      // Get requests made to this donor
-      const { data: donor } = await supabase
-        .from('donors')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-        
-      if (donor) {
-        const { data: requests, error } = await supabase
-          .from('blood_requests')
-          .select('*')
-          .eq('donor_id', donor.id)
-          .order('created_at', { ascending: false });
+          // Fetch donation count
+          const count = await fetchDonationCount(donor.id);
+          setDonationCount(count);
           
-        if (requests && !error) {
-          setDonorRequests(requests as BloodRequest[]);
-        }
-      }
-    };
-    
-    const fetchDonations = async () => {
-      // Get donations made by this donor
-      const { data: donor } = await supabase
-        .from('donors')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-        
-      if (donor) {
-        const { data: donations, error } = await supabase
-          .from('donations')
-          .select('*')
-          .eq('donor_id', donor.id)
-          .order('date', { ascending: false });
+          // Fetch donor-specific requests
+          const requests = await fetchDonorRequests(donor.id);
+          setDonorRequests(requests);
           
-        if (donations && !error) {
-          setUserDonations(donations as Donation[]);
+          // Fetch donations
+          const donations = await fetchDonations(donor.id);
+          setUserDonations(donations);
         }
+        
+        // Fetch user requests (always fetch these)
+        const requests = await fetchUserRequests(user.id);
+        setUserRequests(requests);
+      } catch (error: any) {
+        console.error("Error loading dashboard data:", error.message);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchDonorProfile();
-    fetchUserRequests();
-    fetchDonorRequests();
-    fetchDonations();
+    loadDashboardData();
   }, [user]);
 
   return {
@@ -113,5 +152,6 @@ export const useDashboardData = () => {
     donorRequests,
     donationCount,
     nextEligibleDate,
+    loading,
   };
 };
