@@ -3,7 +3,7 @@ import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import DonateHero from "@/components/donation/DonateHero";
 import DonationTabs from "@/components/donation/DonationTabs";
 
