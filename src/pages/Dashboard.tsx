@@ -15,6 +15,9 @@ import DonorDetailsDialog from "@/components/dashboard/DonorDetailsDialog";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardContainer from "@/components/dashboard/DashboardContainer";
 
+// Import dashboard context
+import { DashboardProvider } from "@/contexts/DashboardContext";
+
 const Dashboard = () => {
   const { user } = useAuth();
   
@@ -54,6 +57,19 @@ const Dashboard = () => {
     await handleRejectRequest(requestId);
   };
 
+  // Create context value
+  const dashboardContextValue = {
+    userDonor,
+    userRequests,
+    userDonations,
+    donorRequests,
+    donationCount,
+    nextEligibleDate,
+    onDonorSelect: handleDonorSelect,
+    onApproveRequest,
+    onRejectRequest
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -65,17 +81,9 @@ const Dashboard = () => {
             onRegisterClick={() => setShowRegisterDialog(true)} 
           />
           
-          <DashboardContainer
-            userDonor={userDonor}
-            userRequests={userRequests}
-            userDonations={userDonations}
-            donorRequests={donorRequests}
-            donationCount={donationCount}
-            nextEligibleDate={nextEligibleDate}
-            onDonorSelect={handleDonorSelect}
-            onApproveRequest={onApproveRequest}
-            onRejectRequest={onRejectRequest}
-          />
+          <DashboardProvider value={dashboardContextValue}>
+            <DashboardContainer />
+          </DashboardProvider>
         </div>
       </main>
       <Footer />

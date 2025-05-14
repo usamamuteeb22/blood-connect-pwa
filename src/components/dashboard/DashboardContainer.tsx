@@ -1,7 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import { Donor, BloodRequest, Donation } from "@/types/custom";
 
 // Import refactored components
 import DonorEligibility from "@/components/dashboard/DonorEligibility";
@@ -12,30 +11,24 @@ import UserDonationsTab from "@/components/dashboard/UserDonationsTab";
 import DonorRequestsTab from "@/components/dashboard/DonorRequestsTab";
 import LocationMap from "@/components/map/LocationMap";
 
-interface DashboardContainerProps {
-  userDonor: Donor | null;
-  userRequests: BloodRequest[];
-  userDonations: Donation[];
-  donorRequests: BloodRequest[];
-  donationCount: number;
-  nextEligibleDate: Date | null;
-  onDonorSelect: (donor: Donor) => void;
-  onApproveRequest: (requestId: string) => void;
-  onRejectRequest: (requestId: string) => void;
-}
+// Import dashboard context
+import { useDashboard } from "@/contexts/DashboardContext";
 
-const DashboardContainer = ({
-  userDonor,
-  userRequests,
-  userDonations,
-  donorRequests,
-  donationCount,
-  nextEligibleDate,
-  onDonorSelect,
-  onApproveRequest,
-  onRejectRequest
-}: DashboardContainerProps) => {
+const DashboardContainer = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Use dashboard context instead of props
+  const {
+    userDonor,
+    userRequests,
+    userDonations,
+    donorRequests,
+    donationCount,
+    nextEligibleDate,
+    onDonorSelect,
+    onApproveRequest,
+    onRejectRequest
+  } = useDashboard();
 
   return (
     <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-8">
