@@ -54,7 +54,7 @@ const RequestForm = () => {
         requester_id: user ? user.id : null,
         requester_name: data.contactName,
         blood_type: data.bloodType,
-        reason: data.reason,
+        reason: data.reason, // This will work once we add the reason column
         city: data.city,
         address: `${data.hospitalName}, ${data.address}`,
         contact: data.contactPhone,

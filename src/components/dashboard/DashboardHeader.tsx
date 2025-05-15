@@ -9,7 +9,9 @@ interface DashboardHeaderProps {
   onRegisterClick: () => void;
 }
 
-const DashboardHeader = ({ user, userDonor, onRegisterClick }: DashboardHeaderProps) => {
+const DashboardHeader = ({ 
+  user
+}: DashboardHeaderProps) => {
   return (
     <div className="flex flex-col md:flex-row items-start justify-between mb-8">
       <div>
@@ -18,19 +20,7 @@ const DashboardHeader = ({ user, userDonor, onRegisterClick }: DashboardHeaderPr
           Welcome back, {user?.user_metadata?.full_name || user?.email || "User"}
         </p>
       </div>
-      <div className="flex space-x-2 mt-4 md:mt-0">
-        <Button variant="outline">View Notifications</Button>
-        {!userDonor ? (
-          <Button 
-            className="bg-blood hover:bg-blood-600"
-            onClick={onRegisterClick}
-          >
-            Register as Donor
-          </Button>
-        ) : (
-          <Button className="bg-blood hover:bg-blood-600">Find Donors</Button>
-        )}
-      </div>
+      {/* Removed notification and donor register buttons */}
     </div>
   );
 };

@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EligibilityCriteria from "./EligibilityCriteria";
 import ImportantInformation from "./ImportantInformation";
 import DonationProcess from "./DonationProcess";
-import DonationRegistration from "./DonationRegistration";
 import RequestForm from "./RequestForm";
 
 interface DonationTabsProps {
@@ -19,8 +18,6 @@ interface DonationTabsProps {
 
 const DonationTabs = ({
   onFullEligibilityCheck,
-  onFindDonationCenters,
-  onScheduleDonation,
   activeTab,
   onTabChange
 }: DonationTabsProps) => {
@@ -44,10 +41,7 @@ const DonationTabs = ({
               
               <div className="space-y-8">
                 <DonationProcess />
-                <DonationRegistration 
-                  onFindDonationCenters={onFindDonationCenters}
-                  onScheduleDonation={onScheduleDonation}
-                />
+                {/* Removed DonationRegistration component */}
               </div>
             </div>
           </TabsContent>
