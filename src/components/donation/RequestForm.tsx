@@ -1,181 +1,216 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+const requestFormSchema = z.object({
+  bloodType: z.string().min(1, "Blood type is required"),
+  reason: z.string().min(5, "Reason is required and must be at least 5 characters"),
+  hospitalName: z.string().min(3, "Hospital name is required"),
+  city: z.string().min(2, "City is required"),
+  address: z.string().min(5, "Address is required"),
+  contactName: z.string().min(3, "Contact name is required"),
+  contactPhone: z.string().min(10, "Valid phone number is required"),
+});
+
+type RequestFormValues = z.infer<typeof requestFormSchema>;
 
 const RequestForm = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  
-  const [bloodType, setBloodType] = useState<string>("");
-  const [hospital, setHospital] = useState<string>("");
-  const [units, setUnits] = useState<string>("1");
-  const [urgency, setUrgency] = useState<string>("medium");
-  const [reason, setReason] = useState<string>("");
-  const [patientName, setPatientName] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  
-  const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-  
-  // Mock hospitals data
-  const hospitals = [
-    "City General Hospital",
-    "Medical Center",
-    "Community Hospital",
-    "Regional Medical Center",
-    "University Hospital",
-  ];
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!bloodType || !hospital) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<RequestFormValues>({
+    resolver: zodResolver(requestFormSchema),
+    defaultValues: {
+      bloodType: "",
+      reason: "",
+      hospitalName: "",
+      city: "",
+      address: "",
+      contactName: user ? user.user_metadata?.full_name || "" : "",
+      contactPhone: user ? user.user_metadata?.phone || "" : "",
+    },
+  });
+
+  const onSubmit = async (data: RequestFormValues) => {
+    setIsSubmitting(true);
     
     try {
-      // Simulated request submission
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Blood request submitted",
-        description: "Your request has been successfully submitted.",
+      // Create request in database
+      const { error } = await supabase.from("blood_requests").insert({
+        requester_id: user ? user.id : null,
+        requester_name: data.contactName,
+        blood_type: data.bloodType,
+        reason: data.reason,
+        city: data.city,
+        address: `${data.hospitalName}, ${data.address}`,
+        contact: data.contactPhone,
+        status: "pending",
       });
-      
-      // Clear form
-      setBloodType("");
-      setHospital("");
-      setUnits("1");
-      setUrgency("medium");
-      setReason("");
-      setPatientName("");
-      
+
+      if (error) throw error;
+
+      toast({
+        title: "Request Submitted",
+        description: "Your blood request has been submitted successfully.",
+      });
+
+      form.reset();
     } catch (error) {
       toast({
-        title: "Submission failed",
-        description: "There was a problem submitting your request.",
         variant: "destructive",
+        title: "Error",
+        description: "There was a problem submitting your request.",
       });
+      console.error("Error submitting request:", error);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-  
+
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Request Blood</CardTitle>
-        <CardDescription>
-          Fill out the form below to request blood donation. All request information is kept confidential.
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          <div className="space-y-1.5">
-            <Label htmlFor="bloodType">Blood Type Required *</Label>
-            <Select value={bloodType} onValueChange={setBloodType} required>
-              <SelectTrigger id="bloodType">
-                <SelectValue placeholder="Select blood type" />
-              </SelectTrigger>
-              <SelectContent>
-                {bloodTypes.map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-1.5">
-            <Label htmlFor="hospital">Hospital/Medical Facility *</Label>
-            <Select value={hospital} onValueChange={setHospital} required>
-              <SelectTrigger id="hospital">
-                <SelectValue placeholder="Select or enter hospital name" />
-              </SelectTrigger>
-              <SelectContent>
-                {hospitals.map(hospital => (
-                  <SelectItem key={hospital} value={hospital}>{hospital}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1.5">
-              <Label htmlFor="units">Number of Units</Label>
-              <Select value={units} onValueChange={setUnits}>
-                <SelectTrigger id="units">
-                  <SelectValue placeholder="Select units needed" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5].map(unit => (
-                    <SelectItem key={unit} value={unit.toString()}>{unit} unit{unit > 1 ? 's' : ''}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-3">
-              <Label>Urgency Level</Label>
-              <RadioGroup value={urgency} onValueChange={setUrgency} className="flex space-x-2">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="low" id="low" />
-                  <Label htmlFor="low" className="text-green-600">Low</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="medium" id="medium" />
-                  <Label htmlFor="medium" className="text-amber-600">Medium</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="high" id="high" />
-                  <Label htmlFor="high" className="text-blood">High</Label>
-                </div>
-              </RadioGroup>
-            </div>
-          </div>
-          
-          <div className="space-y-1.5">
-            <Label htmlFor="patientName">Patient Name (Optional)</Label>
-            <Input 
-              id="patientName" 
-              placeholder="Patient name if you're requesting for someone else"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
+    <Card>
+      <CardContent className="pt-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="bloodType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Required Blood Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select blood type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {bloodTypes.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="space-y-1.5">
-            <Label htmlFor="reason">Reason for Request</Label>
-            <Textarea 
-              id="reason" 
-              placeholder="Please provide brief details about the need for blood donation"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={3}
+
+            <FormField
+              control={form.control}
+              name="reason"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Reason for Request</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Please provide the reason for your blood request"
+                      className="resize-none"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            type="submit" 
-            className="w-full bg-blood hover:bg-blood-600"
-            disabled={isLoading}
-          >
-            {isLoading ? "Submitting Request..." : "Submit Blood Request"}
-          </Button>
-        </CardFooter>
-      </form>
+
+            <FormField
+              control={form.control}
+              name="hospitalName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Hospital Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter hospital name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter city" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter full address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="contactName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter contact person's name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="contactPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-blood hover:bg-blood-600"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Blood Request"}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
     </Card>
   );
 };

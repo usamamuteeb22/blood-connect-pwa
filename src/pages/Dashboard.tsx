@@ -1,9 +1,9 @@
 
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/contexts/AuthContext";
-import { BloodRequest } from "@/types/custom";
 
 // Import custom hooks
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -20,6 +20,15 @@ import { DashboardProvider } from "@/contexts/DashboardContext";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState("overview");
+  
+  // Check if we need to activate a specific tab based on navigation state
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
   
   // Get dashboard data
   const {

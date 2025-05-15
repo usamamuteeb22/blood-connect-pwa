@@ -19,7 +19,8 @@ const Index = () => {
       title: "Request Blood",
       description: "Submit requests for specific blood types",
       icon: "🩸",
-      link: "/request",
+      link: "/donate",
+      state: { activeTab: "request" }
     },
     {
       title: "Real-time Tracking",
@@ -42,8 +43,8 @@ const Index = () => {
     { number: "98%", label: "Request Success Rate" },
   ];
 
-  const handleFeatureClick = (link: string) => {
-    navigate(link);
+  const handleFeatureClick = (link: string, state?: any) => {
+    navigate(link, { state });
   };
 
   return (
@@ -64,16 +65,19 @@ const Index = () => {
                 OneDrop connects blood donors with recipients in real-time. Join our community and help save lives with just one drop.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link to="/donate">
-                  <Button className="bg-blood hover:bg-blood-600 text-white px-8 py-6 text-lg">
-                    Donate Blood
-                  </Button>
-                </Link>
-                <Link to="/request">
-                  <Button variant="outline" className="border-blood text-blood hover:bg-blood-50 px-8 py-6 text-lg">
-                    Request Blood
-                  </Button>
-                </Link>
+                <Button 
+                  className="bg-blood hover:bg-blood-600 text-white px-8 py-6 text-lg"
+                  onClick={() => navigate('/donate')}
+                >
+                  Donate Blood
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="border-blood text-blood hover:bg-blood-50 px-8 py-6 text-lg"
+                  onClick={() => navigate('/donate', { state: { activeTab: 'request' } })}
+                >
+                  Request Blood
+                </Button>
               </div>
             </div>
           </div>
@@ -96,7 +100,7 @@ const Index = () => {
                 <div
                   key={index}
                   className="p-6 border rounded-lg shadow-sm hover:shadow-md transition-shadow bg-white cursor-pointer"
-                  onClick={() => handleFeatureClick(feature.link)}
+                  onClick={() => handleFeatureClick(feature.link, feature.state)}
                 >
                   <div className="text-4xl mb-4">{feature.icon}</div>
                   <h3 className="font-bold text-xl mb-2">{feature.title}</h3>
@@ -134,11 +138,13 @@ const Index = () => {
                   Register as Donor
                 </Button>
               </Link>
-              <Link to="/about">
-                <Button variant="outline" className="border-white text-white hover:bg-white/10 px-8 py-6 text-lg">
-                  Learn More
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                className="border-white text-white hover:bg-white/10 px-8 py-6 text-lg"
+                onClick={() => navigate('/donate', { state: { activeTab: 'request' } })}
+              >
+                I Need Blood
+              </Button>
             </div>
           </div>
         </section>

@@ -6,8 +6,6 @@ import ImportantInformation from "./ImportantInformation";
 import DonationProcess from "./DonationProcess";
 import DonationRegistration from "./DonationRegistration";
 import RequestForm from "./RequestForm";
-import EmergencyRequest from "./EmergencyRequest";
-import RequestStatus from "./RequestStatus";
 
 interface DonationTabsProps {
   onFullEligibilityCheck: () => void;
@@ -23,8 +21,6 @@ const DonationTabs = ({
   onFullEligibilityCheck,
   onFindDonationCenters,
   onScheduleDonation,
-  onEmergencyRequest,
-  onViewPastRequests,
   activeTab,
   onTabChange
 }: DonationTabsProps) => {
@@ -57,15 +53,9 @@ const DonationTabs = ({
           </TabsContent>
           
           <TabsContent value="request">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <RequestForm />
-              </div>
-              
-              <div className="space-y-8">
-                <EmergencyRequest onEmergencyRequest={onEmergencyRequest} />
-                <RequestStatus onViewPastRequests={onViewPastRequests} />
-              </div>
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-xl font-semibold mb-6">Submit a Blood Request</h2>
+              <RequestForm />
             </div>
           </TabsContent>
         </Tabs>

@@ -10,6 +10,7 @@ interface RequestType {
   city: string;
   address: string;
   contact: string;
+  reason?: string;
   status: "pending" | "approved" | "rejected" | "completed";
   created_at: string;
 }
@@ -55,6 +56,12 @@ const BloodRequestCard = ({
       </div>
       
       <div className="grid grid-cols-2 gap-2 text-sm">
+        {request.reason && (
+          <div className="col-span-2">
+            <p className="text-gray-500">Reason for Request</p>
+            <p>{request.reason}</p>
+          </div>
+        )}
         <div>
           <p className="text-gray-500">Location</p>
           <p>{request.city}</p>
@@ -64,7 +71,7 @@ const BloodRequestCard = ({
           <p>{request.contact}</p>
         </div>
         <div className="col-span-2">
-          <p className="text-gray-500">Address</p>
+          <p className="text-gray-500">Full Address</p>
           <p>{request.address}</p>
         </div>
       </div>

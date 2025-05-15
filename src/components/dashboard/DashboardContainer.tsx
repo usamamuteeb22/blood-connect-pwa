@@ -9,7 +9,7 @@ import RecentActivity from "@/components/dashboard/RecentActivity";
 import UserRequestsTab from "@/components/dashboard/UserRequestsTab";
 import UserDonationsTab from "@/components/dashboard/UserDonationsTab";
 import DonorRequestsTab from "@/components/dashboard/DonorRequestsTab";
-import LocationMap from "@/components/map/LocationMap";
+import AvailableDonorsList from "@/components/dashboard/AvailableDonorsList";
 
 // Import dashboard context
 import { useDashboard } from "@/contexts/DashboardContext";
@@ -34,7 +34,7 @@ const DashboardContainer = () => {
     <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-8">
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="map">Find Donors</TabsTrigger>
+        <TabsTrigger value="donors">Find Donors</TabsTrigger>
         <TabsTrigger value="requests">My Requests</TabsTrigger>
         <TabsTrigger value="donations">My Donations</TabsTrigger>
         {userDonor && (
@@ -54,8 +54,8 @@ const DashboardContainer = () => {
         </div>
       </TabsContent>
       
-      <TabsContent value="map">
-        <LocationMap onDonorSelect={onDonorSelect} />
+      <TabsContent value="donors">
+        <AvailableDonorsList onDonorSelect={onDonorSelect} />
       </TabsContent>
       
       <TabsContent value="requests">
