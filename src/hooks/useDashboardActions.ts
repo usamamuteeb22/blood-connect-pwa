@@ -35,6 +35,7 @@ export const useDashboardActions = () => {
             city: selectedDonor.city,
             address: selectedDonor.address,
             contact: userData?.user_metadata?.phone || '',
+            reason: "Request made through donor selection", // Add default reason
             status: 'pending'
           }
         ]);
