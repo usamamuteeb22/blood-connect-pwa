@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Textarea } from "@/components/ui/textarea";
 
 const StandardRequestForm = () => {
   const { toast } = useToast();
@@ -20,6 +21,7 @@ const StandardRequestForm = () => {
   const [bloodType, setBloodType] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [address, setAddress] = useState<string>("");
+  const [reason, setReason] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -53,6 +55,11 @@ const StandardRequestForm = () => {
     // Validate address
     if (!address.trim()) {
       newErrors.address = "Complete address is required";
+    }
+
+    // Validate reason
+    if (!reason.trim()) {
+      newErrors.reason = "Reason for request is required";
     }
     
     setErrors(newErrors);
@@ -105,6 +112,7 @@ const StandardRequestForm = () => {
             city,
             address,
             contact,
+            reason,
             status: "pending"
           }
         ]);
@@ -122,6 +130,7 @@ const StandardRequestForm = () => {
       setBloodType("");
       setCity("");
       setAddress("");
+      setReason("");
       setErrors({});
       
       // Navigate to dashboard to view request
@@ -184,6 +193,19 @@ const StandardRequestForm = () => {
               </SelectContent>
             </Select>
             {errors.bloodType && <p className="text-sm font-medium text-destructive">{errors.bloodType}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="reason" className={errors.reason ? "text-destructive" : ""}>Reason for Request *</Label>
+            <Textarea
+              id="reason"
+              placeholder="Please provide the reason for your blood request"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              required
+              className={errors.reason ? "border-destructive" : ""}
+            />
+            {errors.reason && <p className="text-sm font-medium text-destructive">{errors.reason}</p>}
           </div>
           
           <div className="space-y-1.5">

@@ -18,6 +18,7 @@ export type Database = {
           created_at: string
           donor_id: string | null
           id: string
+          reason: string
           requester_id: string
           requester_name: string
           status: string
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string
           donor_id?: string | null
           id?: string
+          reason: string
           requester_id: string
           requester_name: string
           status?: string
@@ -42,6 +44,7 @@ export type Database = {
           created_at?: string
           donor_id?: string | null
           id?: string
+          reason?: string
           requester_id?: string
           requester_name?: string
           status?: string
