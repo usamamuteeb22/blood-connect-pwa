@@ -1,16 +1,28 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Donor } from "@/types/custom";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { ChevronDown } from "lucide-react";
 
 interface AvailableDonorsListProps {
   onDonorSelect?: (donor: Donor) => void;
 }
 
+// Blood types for the filter
+const bloodTypes = ["All", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
 const AvailableDonorsList = ({ onDonorSelect }: AvailableDonorsListProps) => {
   const [donors, setDonors] = useState<Donor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBloodType, setSelectedBloodType] = useState("All");
   
   useEffect(() => {
     const fetchDonors = async () => {
@@ -37,20 +49,46 @@ const AvailableDonorsList = ({ onDonorSelect }: AvailableDonorsListProps) => {
     fetchDonors();
   }, []);
   
+  // Filter donors based on selected blood type
+  const filteredDonors = useMemo(() => {
+    if (selectedBloodType === "All") {
+      return donors;
+    }
+    return donors.filter(donor => donor.blood_type === selectedBloodType);
+  }, [donors, selectedBloodType]);
+  
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4">Available Blood Donors</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h2 className="text-xl font-semibold">Available Blood Donors</h2>
+        
+        <div className="flex items-center w-full sm:w-auto">
+          <Select value={selectedBloodType} onValueChange={setSelectedBloodType}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by blood type" />
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </SelectTrigger>
+            <SelectContent>
+              {bloodTypes.map(type => (
+                <SelectItem key={type} value={type}>
+                  {type === "All" ? "All Blood Types" : type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       
       {loading ? (
         <div className="py-8 text-center text-gray-500">Loading donors...</div>
-      ) : donors.length > 0 ? (
+      ) : filteredDonors.length > 0 ? (
         <div className="space-y-4">
-          {donors.map((donor) => (
+          {filteredDonors.map((donor) => (
             <div 
               key={donor.id}
               className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="h-10 w-10 rounded-full bg-blood text-white flex items-center justify-center font-bold">
@@ -86,7 +124,9 @@ const AvailableDonorsList = ({ onDonorSelect }: AvailableDonorsListProps) => {
         </div>
       ) : (
         <div className="py-8 text-center text-gray-500">
-          No eligible donors found in your area. Please check again later.
+          {selectedBloodType === "All" 
+            ? "No eligible donors found in your area. Please check again later." 
+            : `No donors with blood type ${selectedBloodType} found.`}
         </div>
       )}
     </div>

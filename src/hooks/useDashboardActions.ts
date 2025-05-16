@@ -72,19 +72,23 @@ export const useDashboardActions = () => {
       if (updateError) throw updateError;
       
       // Get request details
-      const { data: request } = await supabase
+      const { data: request, error: requestError } = await supabase
         .from('blood_requests')
         .select('*')
         .eq('id', requestId)
         .single();
       
+      if (requestError) throw requestError;
+      
       // Get donor details 
-      const { data: donor } = await supabase
+      const { data: donor, error: donorError } = await supabase
         .from('donors')
         .select('id')
         .eq('user_id', user?.id)
         .single();
         
+      if (donorError) throw donorError;
+      
       if (request && donor) {
         // Create donation record
         const { error: donationError } = await supabase

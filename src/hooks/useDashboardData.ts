@@ -53,7 +53,7 @@ const fetchUserRequests = async (userId: string) => {
   return requests as BloodRequest[] || [];
 };
 
-// Helper function to fetch donor requests - now only fetches pending requests
+// Helper function to fetch donor requests - specifically pending status only
 const fetchDonorRequests = async (donorId: string) => {
   const { data: requests, error } = await supabase
     .from('blood_requests')

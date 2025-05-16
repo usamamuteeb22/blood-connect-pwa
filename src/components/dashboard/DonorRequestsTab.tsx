@@ -11,12 +11,13 @@ interface DonorRequestsTabProps {
 }
 
 const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject }: DonorRequestsTabProps) => {
-  // Only display pending requests, filter out approved/rejected ones
+  // Only display pending requests
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const { toast } = useToast();
 
   // Update local state whenever initialRequests changes, filtering for pending requests only
   useEffect(() => {
+    // Only show pending requests from the initialRequests
     const pendingRequests = initialRequests.filter(request => request.status === "pending");
     setRequests(pendingRequests);
   }, [initialRequests]);
@@ -25,7 +26,7 @@ const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject 
   const handleApprove = async (requestId: string) => {
     try {
       await onApprove(requestId);
-      // Update the local state to remove the approved request
+      // Remove the approved request immediately from the local state
       setRequests(prevRequests => prevRequests.filter(request => request.id !== requestId));
       
       toast({
@@ -45,7 +46,7 @@ const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject 
   const handleReject = async (requestId: string) => {
     try {
       await onReject(requestId);
-      // Remove the rejected request from the displayed list
+      // Remove the rejected request immediately from the local state
       setRequests(prevRequests => prevRequests.filter(request => request.id !== requestId));
       
       toast({

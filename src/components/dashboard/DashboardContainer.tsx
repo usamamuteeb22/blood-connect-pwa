@@ -1,6 +1,8 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { LayoutDashboard, Search, ListOrdered, Heart, List } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import refactored components
 import DonorEligibility from "@/components/dashboard/DonorEligibility";
@@ -16,6 +18,7 @@ import { useDashboard } from "@/contexts/DashboardContext";
 
 const DashboardContainer = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const isMobile = useIsMobile();
   
   // Use dashboard context instead of props
   const {
@@ -32,13 +35,28 @@ const DashboardContainer = () => {
 
   return (
     <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-8">
-      <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="donors">Find Donors</TabsTrigger>
-        <TabsTrigger value="requests">My Requests</TabsTrigger>
-        <TabsTrigger value="donations">My Donations</TabsTrigger>
+      <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+        <TabsTrigger value="overview" className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+          <LayoutDashboard className="h-4 w-4" />
+          <span className={isMobile ? "sr-only" : ""}>Overview</span>
+        </TabsTrigger>
+        <TabsTrigger value="donors" className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+          <Search className="h-4 w-4" />
+          <span className={isMobile ? "sr-only" : ""}>Find Donors</span>
+        </TabsTrigger>
+        <TabsTrigger value="requests" className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+          <ListOrdered className="h-4 w-4" />
+          <span className={isMobile ? "sr-only" : ""}>My Requests</span>
+        </TabsTrigger>
+        <TabsTrigger value="donations" className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+          <Heart className="h-4 w-4" />
+          <span className={isMobile ? "sr-only" : ""}>My Donations</span>
+        </TabsTrigger>
         {userDonor && (
-          <TabsTrigger value="donor-requests">Donation Requests</TabsTrigger>
+          <TabsTrigger value="donor-requests" className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+            <List className="h-4 w-4" />
+            <span className={isMobile ? "sr-only" : ""}>Donation Requests</span>
+          </TabsTrigger>
         )}
       </TabsList>
       
