@@ -1,21 +1,22 @@
 
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 
 const RequestCallToAction = () => {
-  const navigate = useNavigate();
-  
   return (
-    <section className="py-12 bg-blood-50 px-4">
-      <div className="container mx-auto text-center">
-        <h2 className="text-2xl font-bold mb-4">Need Blood Urgently?</h2>
-        <p className="max-w-2xl mx-auto mb-6">Submit your blood request and connect with potential donors quickly.</p>
-        <Button 
-          className="bg-blood hover:bg-blood-600"
-          onClick={() => navigate('/donate', { state: { activeTab: 'request' } })}
-        >
-          Create Blood Request
-        </Button>
+    <section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to Make a Difference?</h2>
+          <p className="text-gray-600 mb-8">
+            Your donation can save up to three lives. Join our community of donors today and make a real impact.
+          </p>
+          <Link to="/donate">
+            <Button className="bg-blood hover:bg-blood-600 text-white px-8 py-6 text-lg">
+              I Want to Donate
+            </Button>
+          </Link>
+        </div>
       </div>
     </section>
   );

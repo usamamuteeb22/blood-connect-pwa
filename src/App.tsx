@@ -1,6 +1,5 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "./contexts/AuthContext";
 
 // Import pages
@@ -45,7 +44,6 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <Toaster />
       </AuthProvider>
     </BrowserRouter>
   );

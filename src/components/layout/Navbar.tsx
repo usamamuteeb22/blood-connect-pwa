@@ -2,12 +2,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Bell, Menu, User, X, LogOut } from "lucide-react";
+import { Menu, User, X, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-  const { isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Get user's name from metadata if available
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   
   return (
     <nav className="bg-white shadow-sm py-4">
@@ -38,10 +41,7 @@ const Navbar = () => {
           
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-blood"></span>
-              </Button>
+              <span className="text-gray-700 font-medium">{userName}</span>
               <Link to="/dashboard">
                 <Button variant="outline" className="border-blood text-blood hover:bg-blood hover:text-white">
                   Dashboard
@@ -100,9 +100,9 @@ const Navbar = () => {
             
             {isAuthenticated ? (
               <>
-                <Link to="/notifications" className="text-gray-700 hover:text-blood p-2 transition-colors">
-                  Notifications
-                </Link>
+                <div className="p-2">
+                  <span className="font-medium">{userName}</span>
+                </div>
                 <Link to="/dashboard" className="text-gray-700 hover:text-blood p-2 transition-colors">
                   Dashboard
                 </Link>

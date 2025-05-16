@@ -1,7 +1,10 @@
 
+import { Suspense, lazy } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import ProfileCard from "@/components/profile/ProfileCard";
+
+// Lazy load the ProfileCard component
+const ProfileCard = lazy(() => import("@/components/profile/ProfileCard"));
 
 const Profile = () => {
   return (
@@ -10,7 +13,9 @@ const Profile = () => {
       <main className="flex-grow bg-gray-50">
         <div className="container mx-auto py-8 px-4">
           <h1 className="text-3xl font-bold mb-6">User Profile</h1>
-          <ProfileCard />
+          <Suspense fallback={<div className="text-center py-8">Loading profile...</div>}>
+            <ProfileCard />
+          </Suspense>
         </div>
       </main>
       <Footer />

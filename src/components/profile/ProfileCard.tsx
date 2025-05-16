@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,29 +8,83 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Check, Shield, User } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Shield, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProfileCard = () => {
-  const { toast } = useToast();
+  const { user } = useAuth();
   
   const [userProfile, setUserProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (123) 456-7890",
-    bloodType: "A+",
-    lastDonation: "2023-04-15",
-    location: "New York City, NY",
-    isVerified: true,
+    name: "",
+    email: "",
+    phone: "",
+    bloodType: "",
+    lastDonation: new Date().toISOString().split('T')[0],
+    location: "",
+    isVerified: false,
     isAvailable: true,
     isPublicProfile: true,
-    isLocationVisible: true,
-    receiveNotifications: true,
   });
   
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(userProfile);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [donorId, setDonorId] = useState<string | null>(null);
+  const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  
+  // Fetch user profile data when component mounts
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        // Get user metadata
+        const { data: { user: userData } } = await supabase.auth.getUser();
+        
+        if (userData) {
+          setUserProfile({
+            name: userData.user_metadata?.full_name || "",
+            email: userData.email || "",
+            phone: userData.user_metadata?.phone || "",
+            bloodType: userData.user_metadata?.blood_type || "",
+            lastDonation: new Date().toISOString().split('T')[0],
+            location: userData.user_metadata?.city || "",
+            isVerified: false,
+            isAvailable: true,
+            isPublicProfile: true,
+          });
+          
+          setEditedProfile({
+            name: userData.user_metadata?.full_name || "",
+            email: userData.email || "",
+            phone: userData.user_metadata?.phone || "",
+            bloodType: userData.user_metadata?.blood_type || "",
+            lastDonation: new Date().toISOString().split('T')[0],
+            location: userData.user_metadata?.city || "",
+            isVerified: false,
+            isAvailable: true,
+            isPublicProfile: true,
+          });
+          
+          // Check if user is registered as donor
+          const { data: donorData } = await supabase
+            .from('donors')
+            .select('id, is_eligible')
+            .eq('user_id', userData.id)
+            .single();
+          
+          if (donorData) {
+            setDonorId(donorData.id);
+            setUserProfile(prev => ({ ...prev, isAvailable: donorData.is_eligible }));
+            setEditedProfile(prev => ({ ...prev, isAvailable: donorData.is_eligible }));
+          }
+        }
+      }
+    };
+    
+    fetchUserProfile();
+  }, [user]);
   
   const handleEdit = () => {
     setIsEditing(true);
@@ -41,12 +95,26 @@ const ProfileCard = () => {
     setIsEditing(false);
   };
   
-  const handleSave = () => {
+  const handleSave = async () => {
     setUserProfile(editedProfile);
     setIsEditing(false);
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been updated successfully.",
+    
+    // Update donor eligibility if donor exists
+    if (donorId && userProfile.isAvailable !== editedProfile.isAvailable) {
+      await supabase
+        .from('donors')
+        .update({ is_eligible: editedProfile.isAvailable })
+        .eq('id', donorId);
+    }
+    
+    // Update user metadata
+    await supabase.auth.updateUser({
+      data: {
+        full_name: editedProfile.name,
+        phone: editedProfile.phone,
+        blood_type: editedProfile.bloodType,
+        city: editedProfile.location
+      }
     });
   };
   
@@ -58,6 +126,36 @@ const ProfileCard = () => {
   const handleSwitchChange = (name: string, checked: boolean) => {
     setEditedProfile({ ...editedProfile, [name]: checked });
   };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordError("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setIsPasswordChangeOpen(false);
+        alert("Password updated successfully");
+      }
+    } catch (err: any) {
+      setPasswordError(err.message);
+    }
+  };
   
   return (
     <Card className="w-full">
@@ -65,7 +163,7 @@ const ProfileCard = () => {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>User Profile</CardTitle>
-            <CardDescription>Manage your profile and privacy settings</CardDescription>
+            <CardDescription>Manage your profile and settings</CardDescription>
           </div>
           {!isEditing ? (
             <Button variant="outline" onClick={handleEdit}>
@@ -79,10 +177,9 @@ const ProfileCard = () => {
           )}
         </div>
       </CardHeader>
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 max-w-[400px] mx-4">
+      <Tabs defaultValue="profile">
+        <TabsList className="grid grid-cols-1 max-w-[400px] mx-4">
           <TabsTrigger value="profile">Profile Information</TabsTrigger>
-          <TabsTrigger value="settings">Privacy Settings</TabsTrigger>
         </TabsList>
         <CardContent className="pt-6">
           <TabsContent value="profile" className="mt-0 space-y-6">
@@ -137,7 +234,7 @@ const ProfileCard = () => {
                         name="email"
                         type="email"
                         value={editedProfile.email}
-                        onChange={handleInputChange}
+                        disabled
                       />
                     ) : (
                       <p className="text-sm font-medium">{userProfile.email}</p>
@@ -171,21 +268,6 @@ const ProfileCard = () => {
                       <p className="text-sm font-medium">{userProfile.location}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="lastDonation">Last Donation Date</Label>
-                    {isEditing ? (
-                      <Input 
-                        id="lastDonation"
-                        name="lastDonation"
-                        type="date"
-                        value={editedProfile.lastDonation}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">{userProfile.lastDonation}</p>
-                    )}
-                  </div>
                 </div>
                 
                 <div className="flex items-center space-x-2 pt-4">
@@ -205,110 +287,62 @@ const ProfileCard = () => {
             
             <Separator />
             
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-medium text-lg">Donation History</h3>
-                  <p className="text-sm text-gray-500">Your past donation records</p>
-                </div>
-                <Button variant="outline" className="text-sm">View All</Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">April 15, 2023</span>
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      <Check className="w-3 h-3 mr-1" /> Complete
-                    </Badge>
-                  </div>
-                  <p className="font-medium">City General Hospital</p>
-                  <p className="text-sm text-gray-500">Blood Type: A+</p>
-                </div>
-                <div className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">January 10, 2023</span>
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      <Check className="w-3 h-3 mr-1" /> Complete
-                    </Badge>
-                  </div>
-                  <p className="font-medium">Medical Center</p>
-                  <p className="text-sm text-gray-500">Blood Type: A+</p>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="settings" className="mt-0 space-y-6">
-            <div className="space-y-4">
-              <h3 className="font-medium text-lg">Privacy Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="isPublicProfile">Public Profile</Label>
-                    <p className="text-sm text-gray-500">Allow others to view your profile</p>
-                  </div>
-                  <Switch 
-                    id="isPublicProfile"
-                    checked={isEditing ? editedProfile.isPublicProfile : userProfile.isPublicProfile}
-                    onCheckedChange={isEditing ? 
-                      (checked) => handleSwitchChange("isPublicProfile", checked) : 
-                      undefined
-                    }
-                    disabled={!isEditing}
-                  />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="isLocationVisible">Location Visibility</Label>
-                    <p className="text-sm text-gray-500">Show your location to potential recipients</p>
-                  </div>
-                  <Switch 
-                    id="isLocationVisible"
-                    checked={isEditing ? editedProfile.isLocationVisible : userProfile.isLocationVisible}
-                    onCheckedChange={isEditing ? 
-                      (checked) => handleSwitchChange("isLocationVisible", checked) : 
-                      undefined
-                    }
-                    disabled={!isEditing}
-                  />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="receiveNotifications">Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive alerts about nearby blood requests</p>
-                  </div>
-                  <Switch 
-                    id="receiveNotifications"
-                    checked={isEditing ? editedProfile.receiveNotifications : userProfile.receiveNotifications}
-                    onCheckedChange={isEditing ? 
-                      (checked) => handleSwitchChange("receiveNotifications", checked) : 
-                      undefined
-                    }
-                    disabled={!isEditing}
-                  />
-                </div>
-              </div>
-            </div>
-            
             <div className="space-y-4 pt-4">
               <h3 className="font-medium text-lg">Account Security</h3>
-              <div className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
-                  Change Password
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  Enable Two-Factor Authentication
-                </Button>
-                <Button variant="outline" className="w-full justify-start text-blood">
-                  Delete Account
-                </Button>
-              </div>
+              
+              {isPasswordChangeOpen ? (
+                <div className="space-y-4 p-4 border rounded-md">
+                  <h4 className="text-md font-medium">Change Password</h4>
+                  
+                  {passwordError && (
+                    <div className="p-3 bg-red-50 text-red-800 rounded-md text-sm">
+                      {passwordError}
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-2 pt-2">
+                    <Button variant="outline" onClick={() => setIsPasswordChangeOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleChangePassword} className="bg-blood hover:bg-blood-600">
+                      Update Password
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setIsPasswordChangeOpen(true)}
+                  >
+                    Change Password
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start text-blood">
+                    Delete Account
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
         </CardContent>
@@ -317,11 +351,6 @@ const ProfileCard = () => {
         <p className="text-xs text-gray-500">
           Last updated: {new Date().toLocaleDateString()}
         </p>
-        {!isEditing && activeTab === "profile" && (
-          <Button variant="outline" className="text-blood border-blood hover:bg-blood-50">
-            Download Medical Certificate
-          </Button>
-        )}
       </CardFooter>
     </Card>
   );

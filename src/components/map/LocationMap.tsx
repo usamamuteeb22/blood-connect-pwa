@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -37,7 +38,7 @@ const LocationMap = ({ onDonorSelect }: LocationMapProps) => {
     const fetchDonors = async () => {
       setLoading(true);
       try {
-        // Fetch all eligible donors
+        // Fetch all eligible donors who have set their availability to true
         const { data, error } = await supabase
           .from('donors')
           .select('*')

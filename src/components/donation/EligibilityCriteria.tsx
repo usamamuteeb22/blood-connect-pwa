@@ -38,7 +38,7 @@ const EligibilityCriteria = ({ onFullEligibilityCheck }: EligibilityCriteriaProp
           className="w-full mt-6 bg-blood hover:bg-blood-600"
           onClick={onFullEligibilityCheck}
         >
-          Check Full Eligibility
+          Become a Donor
         </Button>
       </CardContent>
     </Card>
