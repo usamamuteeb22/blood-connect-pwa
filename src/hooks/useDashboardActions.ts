@@ -63,7 +63,7 @@ export const useDashboardActions = () => {
   
   const handleApproveRequest = async (requestId: string) => {
     try {
-      // Update request status
+      // Update request status to approved (not pending anymore)
       const { error: updateError } = await supabase
         .from('blood_requests')
         .update({ status: 'approved' })
@@ -137,7 +137,7 @@ export const useDashboardActions = () => {
   
   const handleRejectRequest = async (requestId: string) => {
     try {
-      // Update request status
+      // Update request status to rejected (not pending anymore)
       const { error } = await supabase
         .from('blood_requests')
         .update({ status: 'rejected' })

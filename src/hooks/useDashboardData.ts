@@ -53,12 +53,13 @@ const fetchUserRequests = async (userId: string) => {
   return requests as BloodRequest[] || [];
 };
 
-// Helper function to fetch donor requests
+// Helper function to fetch donor requests - now only fetches pending requests
 const fetchDonorRequests = async (donorId: string) => {
   const { data: requests, error } = await supabase
     .from('blood_requests')
     .select('*')
     .eq('donor_id', donorId)
+    .eq('status', 'pending')
     .order('created_at', { ascending: false });
     
   if (error) {
@@ -95,6 +96,10 @@ export const useDashboardData = () => {
   const [donationCount, setDonationCount] = useState(0);
   const [nextEligibleDate, setNextEligibleDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // Expose refresh trigger setter for components to use
+  const refreshData = () => setRefreshTrigger(prev => prev + 1);
   
   // Fetch user data
   useEffect(() => {
@@ -118,7 +123,7 @@ export const useDashboardData = () => {
           const count = await fetchDonationCount(donor.id);
           setDonationCount(count);
           
-          // Fetch donor-specific requests
+          // Fetch donor-specific requests - only pending ones
           const requests = await fetchDonorRequests(donor.id);
           setDonorRequests(requests);
           
@@ -143,7 +148,7 @@ export const useDashboardData = () => {
     };
 
     loadDashboardData();
-  }, [user]);
+  }, [user, refreshTrigger]); // Add refreshTrigger as a dependency
 
   return {
     userDonor,
@@ -153,5 +158,6 @@ export const useDashboardData = () => {
     donationCount,
     nextEligibleDate,
     loading,
+    refreshData // Export the refresh function
   };
 };

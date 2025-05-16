@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BloodRequest } from "@/types/custom";
 import BloodRequestCard from "@/components/dashboard/BloodRequestCard";
 import { useToast } from "@/hooks/use-toast";
@@ -11,21 +11,22 @@ interface DonorRequestsTabProps {
 }
 
 const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject }: DonorRequestsTabProps) => {
-  const [requests, setRequests] = useState(initialRequests);
+  // Only display pending requests, filter out approved/rejected ones
+  const [requests, setRequests] = useState<BloodRequest[]>([]);
   const { toast } = useToast();
+
+  // Update local state whenever initialRequests changes, filtering for pending requests only
+  useEffect(() => {
+    const pendingRequests = initialRequests.filter(request => request.status === "pending");
+    setRequests(pendingRequests);
+  }, [initialRequests]);
   
   // Handle approving a blood request
   const handleApprove = async (requestId: string) => {
     try {
       await onApprove(requestId);
-      // Update the local state to show the request as approved
-      setRequests(prevRequests => 
-        prevRequests.map(request => 
-          request.id === requestId 
-            ? { ...request, status: "approved" } 
-            : request
-        )
-      );
+      // Update the local state to remove the approved request
+      setRequests(prevRequests => prevRequests.filter(request => request.id !== requestId));
       
       toast({
         title: "Request approved",
@@ -45,9 +46,7 @@ const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject 
     try {
       await onReject(requestId);
       // Remove the rejected request from the displayed list
-      setRequests(prevRequests => 
-        prevRequests.filter(request => request.id !== requestId)
-      );
+      setRequests(prevRequests => prevRequests.filter(request => request.id !== requestId));
       
       toast({
         title: "Request rejected",
@@ -67,7 +66,7 @@ const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject 
       <h2 className="text-xl font-semibold mb-4">Blood Donation Requests</h2>
       {requests.length === 0 ? (
         <p className="text-gray-500 text-center py-10">
-          You don't have any blood donation requests yet.
+          You don't have any pending blood donation requests.
         </p>
       ) : (
         <div className="space-y-4">

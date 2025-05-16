@@ -30,14 +30,15 @@ const Dashboard = () => {
     }
   }, [location.state]);
   
-  // Get dashboard data
+  // Get dashboard data with refresh capability
   const {
     userDonor,
     userRequests,
     userDonations,
     donorRequests,
     donationCount,
-    nextEligibleDate
+    nextEligibleDate,
+    refreshData
   } = useDashboardData();
   
   // Get dashboard actions
@@ -56,14 +57,19 @@ const Dashboard = () => {
   // Create wrapper functions to handle data refresh after actions
   const onSendRequest = async () => {
     await handleSendRequest();
+    refreshData(); // Refresh data after sending request
   };
   
   const onApproveRequest = async (requestId: string) => {
-    await handleApproveRequest(requestId);
+    const result = await handleApproveRequest(requestId);
+    refreshData(); // Refresh data after approving request
+    return result;
   };
   
   const onRejectRequest = async (requestId: string) => {
-    await handleRejectRequest(requestId);
+    const result = await handleRejectRequest(requestId);
+    refreshData(); // Refresh data after rejecting request
+    return result;
   };
 
   // Create context value
