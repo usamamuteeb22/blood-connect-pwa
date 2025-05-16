@@ -1,10 +1,12 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import EligibilityCriteria from "./EligibilityCriteria";
 import ImportantInformation from "./ImportantInformation";
 import DonationProcess from "./DonationProcess";
 import RequestForm from "./RequestForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface DonationTabsProps {
   onFullEligibilityCheck: () => void;
@@ -21,6 +23,18 @@ const DonationTabs = ({
   activeTab,
   onTabChange
 }: DonationTabsProps) => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  // Handle form access with auth check
+  const handleFormAccess = () => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return false;
+    }
+    return true;
+  };
+
   return (
     <section className="py-16 px-4">
       <div className="container mx-auto">
@@ -35,7 +49,7 @@ const DonationTabs = ({
           <TabsContent value="donate">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-8">
-                <EligibilityCriteria onFullEligibilityCheck={onFullEligibilityCheck} />
+                {/* Eligibility Criteria section removed */}
                 <ImportantInformation />
               </div>
               
@@ -49,7 +63,19 @@ const DonationTabs = ({
           <TabsContent value="request">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-xl font-semibold mb-6">Submit a Blood Request</h2>
-              <RequestForm />
+              {isAuthenticated ? (
+                <RequestForm />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="mb-4">Please sign in to submit a blood request</p>
+                  <Button 
+                    onClick={() => navigate("/auth")}
+                    className="bg-blood hover:bg-blood-600"
+                  >
+                    Sign In
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

@@ -6,11 +6,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import DonateHero from "@/components/donation/DonateHero";
 import DonationTabs from "@/components/donation/DonationTabs";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Donate = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("donate");
   
   // Check if we need to activate a specific tab based on navigation state
@@ -22,6 +24,15 @@ const Donate = () => {
   
   // Handle button clicks
   const handleCheckEligibility = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to continue with the donation process.",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     toast({
       title: "Eligibility Check",
       description: "Based on the criteria, you appear to be eligible to donate blood. Please consult with a healthcare professional for a final determination.",
@@ -29,30 +40,63 @@ const Donate = () => {
   };
 
   const handleFullEligibilityCheck = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to continue with the donation process.",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     toast({
       title: "Full Eligibility Guide",
       description: "Please answer a few questions to determine your eligibility to donate blood.",
     });
-    // In a real app, this would open a modal or navigate to a detailed eligibility questionnaire
   };
 
   const handleFindDonationCenters = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to view donation centers.",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     toast({
       title: "Donation Centers",
       description: "We're finding donation centers near your location.",
     });
-    // In a real app, this would show a map of nearby donation centers
   };
 
   const handleScheduleDonation = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to schedule your blood donation appointment.",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     toast({
       title: "Schedule Donation",
       description: "Please sign in to schedule your blood donation appointment.",
     });
-    navigate("/auth");
   };
 
   const handleEmergencyRequest = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to submit a blood request.",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     toast({
       title: "Request Submitted",
       description: "Your blood request has been submitted. You'll be notified when donors respond.",
@@ -61,6 +105,15 @@ const Donate = () => {
   };
 
   const handleViewPastRequests = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to view your past blood requests.",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     toast({
       title: "Authentication Required",
       description: "Please sign in to view your past blood requests.",

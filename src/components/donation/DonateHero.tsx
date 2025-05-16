@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DonateHeroProps {
   onCheckEligibility?: () => void;
@@ -8,8 +9,15 @@ interface DonateHeroProps {
 
 const DonateHero = ({ onCheckEligibility }: DonateHeroProps) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   
-  const handleCheckEligibility = () => {
+  const handleButtonClick = () => {
+    if (!isAuthenticated) {
+      // Redirect to auth page if not authenticated
+      navigate("/auth");
+      return;
+    }
+    
     if (onCheckEligibility) {
       onCheckEligibility();
     }
@@ -27,10 +35,10 @@ const DonateHero = ({ onCheckEligibility }: DonateHeroProps) => {
           Your blood donation can save up to 3 lives. Join our community of donors and make a difference today.
         </p>
         <Button
-          onClick={handleCheckEligibility}
+          onClick={handleButtonClick}
           className="bg-blood hover:bg-blood-600 text-white px-8 py-6 text-lg"
         >
-          Check Your Eligibility
+          Become a Donor
         </Button>
       </div>
       
