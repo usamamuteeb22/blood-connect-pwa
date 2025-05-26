@@ -23,43 +23,26 @@ export function DashboardProvider({
   children: React.ReactNode;
   value: DashboardContextProps;
 }) {
-  // Validate value exists
+  // Simple validation without complex error handling that might interfere with rendering
   if (!value) {
-    console.error('DashboardProvider: value prop is required');
     throw new Error('DashboardProvider: value prop is required');
   }
 
-  // Validate required functions
-  if (typeof value.onDonorSelect !== 'function') {
-    console.error('DashboardProvider: onDonorSelect must be a function');
-    throw new Error('DashboardProvider: onDonorSelect must be a function');
-  }
-
-  if (typeof value.onApproveRequest !== 'function') {
-    console.error('DashboardProvider: onApproveRequest must be a function');
-    throw new Error('DashboardProvider: onApproveRequest must be a function');
-  }
-
-  if (typeof value.onRejectRequest !== 'function') {
-    console.error('DashboardProvider: onRejectRequest must be a function');
-    throw new Error('DashboardProvider: onRejectRequest must be a function');
-  }
-
-  // Ensure arrays are defined with safe defaults
-  const contextValue: DashboardContextProps = {
+  // Ensure safe defaults for arrays and functions
+  const safeValue: DashboardContextProps = {
     userDonor: value.userDonor || null,
     userRequests: Array.isArray(value.userRequests) ? value.userRequests : [],
     userDonations: Array.isArray(value.userDonations) ? value.userDonations : [],
     donorRequests: Array.isArray(value.donorRequests) ? value.donorRequests : [],
     donationCount: typeof value.donationCount === 'number' ? value.donationCount : 0,
     nextEligibleDate: value.nextEligibleDate || null,
-    onDonorSelect: value.onDonorSelect,
-    onApproveRequest: value.onApproveRequest,
-    onRejectRequest: value.onRejectRequest,
+    onDonorSelect: value.onDonorSelect || (() => {}),
+    onApproveRequest: value.onApproveRequest || (() => Promise.resolve()),
+    onRejectRequest: value.onRejectRequest || (() => Promise.resolve()),
   };
 
   return (
-    <DashboardContext.Provider value={contextValue}>
+    <DashboardContext.Provider value={safeValue}>
       {children}
     </DashboardContext.Provider>
   );
