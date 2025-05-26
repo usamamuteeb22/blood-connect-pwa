@@ -72,18 +72,31 @@ const Dashboard = () => {
     return result;
   };
 
-  // Create context value
+  // Create context value with proper validation
   const dashboardContextValue = {
-    userDonor,
-    userRequests,
-    userDonations,
-    donorRequests,
-    donationCount,
-    nextEligibleDate,
+    userDonor: userDonor || null,
+    userRequests: userRequests || [],
+    userDonations: userDonations || [],
+    donorRequests: donorRequests || [],
+    donationCount: donationCount || 0,
+    nextEligibleDate: nextEligibleDate || null,
     onDonorSelect: handleDonorSelect,
     onApproveRequest,
     onRejectRequest
   };
+
+  // Add loading state check
+  if (!user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-grow bg-gray-50 flex items-center justify-center">
+          <div>Loading...</div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
