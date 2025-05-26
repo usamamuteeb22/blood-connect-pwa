@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "@/contexts/LocationContext";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import EligibilityFormFields from "@/components/donation/EligibilityFormFields";
@@ -14,6 +15,7 @@ import EligibilityFormActions from "@/components/donation/EligibilityFormActions
 const EligibilityForm = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { currentPosition, getCurrentLocation } = useLocation();
   
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -119,7 +121,12 @@ const EligibilityForm = () => {
     setIsLoading(true);
     
     try {
-      // Register user as donor in Supabase
+      // Get current location if not available
+      if (!currentPosition) {
+        await getCurrentLocation();
+      }
+
+      // Register user as donor in Supabase with location data
       const { error } = await supabase
         .from('donors')
         .insert([
@@ -133,8 +140,11 @@ const EligibilityForm = () => {
             weight: weightValue,
             city,
             address,
+            latitude: currentPosition?.lat || null,
+            longitude: currentPosition?.lng || null,
             next_eligible_date: new Date(new Date().setDate(new Date().getDate() + 90)).toISOString(),
-            is_eligible: true
+            is_eligible: true,
+            availability: true
           }
         ]);
       
@@ -182,6 +192,24 @@ const EligibilityForm = () => {
               <div className="px-6">
                 <Alert>
                   <AlertDescription>{successMessage}</AlertDescription>
+                </Alert>
+              </div>
+            )}
+            
+            {!currentPosition && (
+              <div className="px-6">
+                <Alert>
+                  <AlertDescription className="flex items-center justify-between">
+                    <span>Enable location access to help others find you as a donor</span>
+                    <Button 
+                      onClick={getCurrentLocation} 
+                      variant="outline" 
+                      size="sm"
+                      className="ml-2"
+                    >
+                      Enable Location
+                    </Button>
+                  </AlertDescription>
                 </Alert>
               </div>
             )}

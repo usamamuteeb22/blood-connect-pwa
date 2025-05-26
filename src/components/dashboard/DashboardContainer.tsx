@@ -1,7 +1,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Search, ListOrdered, Heart, List } from "lucide-react";
+import { LayoutDashboard, Search, ListOrdered, Heart, List, Map } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import refactored components
@@ -12,6 +12,7 @@ import UserRequestsTab from "@/components/dashboard/UserRequestsTab";
 import UserDonationsTab from "@/components/dashboard/UserDonationsTab";
 import DonorRequestsTab from "@/components/dashboard/DonorRequestsTab";
 import AvailableDonorsList from "@/components/dashboard/AvailableDonorsList";
+import MapDonorFinder from "@/components/dashboard/MapDonorFinder";
 
 // Import dashboard context
 import { useDashboard } from "@/contexts/DashboardContext";
@@ -44,6 +45,10 @@ const DashboardContainer = () => {
           <Search className="h-4 w-4" />
           <span className={isMobile ? "sr-only" : ""}>Find Donors</span>
         </TabsTrigger>
+        <TabsTrigger value="map" className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+          <Map className="h-4 w-4" />
+          <span className={isMobile ? "sr-only" : ""}>Map View</span>
+        </TabsTrigger>
         <TabsTrigger value="requests" className="flex items-center gap-2 flex-grow sm:flex-grow-0">
           <ListOrdered className="h-4 w-4" />
           <span className={isMobile ? "sr-only" : ""}>My Requests</span>
@@ -74,6 +79,10 @@ const DashboardContainer = () => {
       
       <TabsContent value="donors">
         <AvailableDonorsList onDonorSelect={onDonorSelect} />
+      </TabsContent>
+      
+      <TabsContent value="map">
+        <MapDonorFinder onDonorSelect={onDonorSelect} />
       </TabsContent>
       
       <TabsContent value="requests">
