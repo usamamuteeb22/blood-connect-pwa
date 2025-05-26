@@ -43,7 +43,8 @@ function ChangeView({ center }: { center: { lat: number; lng: number } }) {
   return null;
 }
 
-const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onRequestBlood }) => {
+// Separate component for map content
+function MapContent({ center, donors, onRequestBlood }: InteractiveMapProps) {
   // Create custom icons for different blood types
   const createBloodTypeIcon = (bloodType: string) => {
     const color = bloodType.includes('O') ? '#dc2626' : bloodType.includes('A') ? '#2563eb' : 
@@ -63,6 +64,60 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onReque
     });
   };
 
+  return (
+    <>
+      <ChangeView center={center} />
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      
+      {donors.map((donor) => (
+        <Marker
+          key={donor.id}
+          position={[donor.latitude, donor.longitude]}
+          icon={createBloodTypeIcon(donor.blood_type)}
+        >
+          <Popup>
+            <div className="p-2 min-w-[200px]">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-lg">{donor.name}</h3>
+                <Badge variant="secondary" className="bg-red-600 text-white">
+                  {donor.blood_type}
+                </Badge>
+              </div>
+              
+              <div className="space-y-2 mb-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <MapPin className="h-4 w-4" />
+                  <span>{donor.city}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Phone className="h-4 w-4" />
+                  <span>{donor.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${donor.availability ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <span className="text-sm">{donor.availability ? 'Available' : 'Not Available'}</span>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => onRequestBlood(donor)}
+                className="w-full bg-red-600 hover:bg-red-700"
+                disabled={!donor.availability}
+              >
+                Request Blood
+              </Button>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
+}
+
+const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onRequestBlood }) => {
   const mapCenter: LatLngExpression = [center.lat, center.lng];
 
   return (
@@ -73,53 +128,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onReque
         style={{ height: '100%', width: '100%' }}
         className="z-0"
       >
-        <ChangeView center={center} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        {donors.map((donor) => (
-          <Marker
-            key={donor.id}
-            position={[donor.latitude, donor.longitude]}
-            icon={createBloodTypeIcon(donor.blood_type)}
-          >
-            <Popup>
-              <div className="p-2 min-w-[200px]">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-lg">{donor.name}</h3>
-                  <Badge variant="secondary" className="bg-red-600 text-white">
-                    {donor.blood_type}
-                  </Badge>
-                </div>
-                
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    <span>{donor.city}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="h-4 w-4" />
-                    <span>{donor.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${donor.availability ? 'bg-green-500' : 'bg-gray-400'}`} />
-                    <span className="text-sm">{donor.availability ? 'Available' : 'Not Available'}</span>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={() => onRequestBlood(donor)}
-                  className="w-full bg-red-600 hover:bg-red-700"
-                  disabled={!donor.availability}
-                >
-                  Request Blood
-                </Button>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        <MapContent center={center} donors={donors} onRequestBlood={onRequestBlood} />
       </MapContainer>
     </div>
   );
