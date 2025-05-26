@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Icon, LatLngExpression } from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,19 +32,14 @@ interface InteractiveMapProps {
   onRequestBlood: (donor: Donor) => void;
 }
 
-// Component to update map view when center changes
-function ChangeView({ center }: { center: { lat: number; lng: number } }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView([center.lat, center.lng], map.getZoom());
-  }, [center, map]);
-  
-  return null;
-}
-
 const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onRequestBlood }) => {
   const mapCenter: LatLngExpression = [center.lat, center.lng];
+  const [key, setKey] = useState(0);
+
+  // Update map when center changes by remounting
+  useEffect(() => {
+    setKey(prev => prev + 1);
+  }, [center.lat, center.lng]);
 
   // Create custom icons for different blood types
   const createBloodTypeIcon = (bloodType: string) => {
@@ -68,12 +63,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onReque
   return (
     <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg">
       <MapContainer
+        key={key}
         center={mapCenter}
         zoom={12}
         style={{ height: '100%', width: '100%' }}
         className="z-0"
       >
-        <ChangeView center={center} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
