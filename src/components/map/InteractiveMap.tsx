@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { Icon, LatLngExpression } from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Phone, MapPin } from 'lucide-react';
@@ -35,13 +35,15 @@ interface InteractiveMapProps {
 // Component to update map view when center changes
 function ChangeView({ center }: { center: { lat: number; lng: number } }) {
   const map = useMap();
-  map.setView([center.lat, center.lng], map.getZoom());
+  
+  useEffect(() => {
+    map.setView([center.lat, center.lng], map.getZoom());
+  }, [center, map]);
+  
   return null;
 }
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onRequestBlood }) => {
-  const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
-
   // Create custom icons for different blood types
   const createBloodTypeIcon = (bloodType: string) => {
     const color = bloodType.includes('O') ? '#dc2626' : bloodType.includes('A') ? '#2563eb' : 
@@ -61,10 +63,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onReque
     });
   };
 
+  const mapCenter: LatLngExpression = [center.lat, center.lng];
+
   return (
     <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg">
       <MapContainer
-        center={[center.lat, center.lng]}
+        center={mapCenter}
         zoom={12}
         style={{ height: '100%', width: '100%' }}
         className="z-0"
@@ -85,7 +89,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onReque
               <div className="p-2 min-w-[200px]">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-lg">{donor.name}</h3>
-                  <Badge variant="secondary" className="bg-blood text-white">
+                  <Badge variant="secondary" className="bg-red-600 text-white">
                     {donor.blood_type}
                   </Badge>
                 </div>
@@ -107,7 +111,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ center, donors, onReque
                 
                 <Button 
                   onClick={() => onRequestBlood(donor)}
-                  className="w-full bg-blood hover:bg-blood-600"
+                  className="w-full bg-red-600 hover:bg-red-700"
                   disabled={!donor.availability}
                 >
                   Request Blood
