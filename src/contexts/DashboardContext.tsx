@@ -23,29 +23,29 @@ export function DashboardProvider({
   children: React.ReactNode;
   value: DashboardContextProps;
 }) {
-  // Add comprehensive validation
+  // Validate value exists
   if (!value) {
     console.error('DashboardProvider: value prop is required');
-    return <div>Dashboard context error: No value provided</div>;
+    throw new Error('DashboardProvider: value prop is required');
   }
 
   // Validate required functions
   if (typeof value.onDonorSelect !== 'function') {
     console.error('DashboardProvider: onDonorSelect must be a function');
-    return <div>Dashboard context error: Invalid onDonorSelect</div>;
+    throw new Error('DashboardProvider: onDonorSelect must be a function');
   }
 
   if (typeof value.onApproveRequest !== 'function') {
     console.error('DashboardProvider: onApproveRequest must be a function');
-    return <div>Dashboard context error: Invalid onApproveRequest</div>;
+    throw new Error('DashboardProvider: onApproveRequest must be a function');
   }
 
   if (typeof value.onRejectRequest !== 'function') {
     console.error('DashboardProvider: onRejectRequest must be a function');
-    return <div>Dashboard context error: Invalid onRejectRequest</div>;
+    throw new Error('DashboardProvider: onRejectRequest must be a function');
   }
 
-  // Ensure arrays are defined
+  // Ensure arrays are defined with safe defaults
   const contextValue: DashboardContextProps = {
     userDonor: value.userDonor || null,
     userRequests: Array.isArray(value.userRequests) ? value.userRequests : [],
