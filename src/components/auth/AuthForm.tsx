@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type UserRole = "donor" | "recipient" | "hospital";
 
@@ -24,9 +25,55 @@ const AuthForm = () => {
   const [bloodType, setBloodType] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("donor");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (mode === "signup") {
+      if (!name.trim()) {
+        newErrors.name = "Full name is required";
+      }
+      
+      if (!phoneNumber.trim()) {
+        newErrors.phoneNumber = "Phone number is required";
+      } else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(phoneNumber)) {
+        newErrors.phoneNumber = "Please enter a valid phone number";
+      }
+      
+      if (!bloodType) {
+        newErrors.bloodType = "Blood type is required";
+      }
+      
+      if (password.length < 8) {
+        newErrors.password = "Password must be at least 8 characters long";
+      }
+    }
+    
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    if (!password.trim()) {
+      newErrors.password = "Password is required";
+    }
+    
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setFieldErrors({});
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -41,6 +88,8 @@ const AuthForm = () => {
         };
         await signUp(email, password, userData);
       }
+    } catch (err: any) {
+      setError(err.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -66,6 +115,15 @@ const AuthForm = () => {
             : "Join OneDrop to start saving lives today"}
         </CardDescription>
       </CardHeader>
+      
+      {error && (
+        <div className="px-6">
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+      
       <Tabs defaultValue={mode} onValueChange={(value) => setMode(value as "signin" | "signup")}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -76,7 +134,7 @@ const AuthForm = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className={fieldErrors.email ? "text-destructive" : ""}>Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -84,11 +142,15 @@ const AuthForm = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className={fieldErrors.email ? "border-destructive" : ""}
                 />
+                {fieldErrors.email && (
+                  <p className="text-sm text-destructive">{fieldErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className={fieldErrors.password ? "text-destructive" : ""}>Password</Label>
                   <a href="#" className="text-xs text-blood hover:underline">
                     Forgot password?
                   </a>
@@ -99,7 +161,11 @@ const AuthForm = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className={fieldErrors.password ? "border-destructive" : ""}
                 />
+                {fieldErrors.password && (
+                  <p className="text-sm text-destructive">{fieldErrors.password}</p>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col">
@@ -118,17 +184,21 @@ const AuthForm = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name" className={fieldErrors.name ? "text-destructive" : ""}>Full Name</Label>
                 <Input
                   id="name"
                   placeholder="John Doe"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className={fieldErrors.name ? "border-destructive" : ""}
                 />
+                {fieldErrors.name && (
+                  <p className="text-sm text-destructive">{fieldErrors.name}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-email" className={fieldErrors.email ? "text-destructive" : ""}>Email</Label>
                 <Input
                   id="signup-email"
                   type="email"
@@ -136,10 +206,14 @@ const AuthForm = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className={fieldErrors.email ? "border-destructive" : ""}
                 />
+                {fieldErrors.email && (
+                  <p className="text-sm text-destructive">{fieldErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className={fieldErrors.phoneNumber ? "text-destructive" : ""}>Phone Number</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -147,12 +221,16 @@ const AuthForm = () => {
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   required
+                  className={fieldErrors.phoneNumber ? "border-destructive" : ""}
                 />
+                {fieldErrors.phoneNumber && (
+                  <p className="text-sm text-destructive">{fieldErrors.phoneNumber}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bloodType">Blood Type</Label>
+                <Label htmlFor="bloodType" className={fieldErrors.bloodType ? "text-destructive" : ""}>Blood Type</Label>
                 <Select value={bloodType} onValueChange={setBloodType} required>
-                  <SelectTrigger id="bloodType">
+                  <SelectTrigger id="bloodType" className={fieldErrors.bloodType ? "border-destructive" : ""}>
                     <SelectValue placeholder="Select blood type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -161,6 +239,9 @@ const AuthForm = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.bloodType && (
+                  <p className="text-sm text-destructive">{fieldErrors.bloodType}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Register as</Label>
@@ -183,14 +264,18 @@ const AuthForm = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
+                <Label htmlFor="signup-password" className={fieldErrors.password ? "text-destructive" : ""}>Password</Label>
                 <Input
                   id="signup-password"
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className={fieldErrors.password ? "border-destructive" : ""}
                 />
+                {fieldErrors.password && (
+                  <p className="text-sm text-destructive">{fieldErrors.password}</p>
+                )}
                 <p className="text-xs text-gray-500">
                   Password must be at least 8 characters long
                 </p>

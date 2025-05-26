@@ -5,14 +5,13 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 
 const StandardRequestForm = () => {
-  const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -24,6 +23,8 @@ const StandardRequestForm = () => {
   const [reason, setReason] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   
@@ -68,22 +69,16 @@ const StandardRequestForm = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
+    setSuccessMessage("");
     
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to submit a blood request.",
-      });
-      navigate("/auth");
+      setSubmitError("Please sign in to submit a blood request.");
       return;
     }
     
     if (!validateForm()) {
-      toast({
-        title: "Form Validation Failed",
-        description: "Please correct the highlighted errors to continue.",
-        variant: "destructive",
-      });
+      setSubmitError("Please correct the highlighted errors to continue.");
       return;
     }
     
@@ -119,10 +114,7 @@ const StandardRequestForm = () => {
       
       if (error) throw error;
       
-      toast({
-        title: "Request submitted",
-        description: "Your blood request has been successfully submitted.",
-      });
+      setSuccessMessage("Your blood request has been successfully submitted.");
       
       // Clear form
       setName("");
@@ -133,15 +125,13 @@ const StandardRequestForm = () => {
       setReason("");
       setErrors({});
       
-      // Navigate to dashboard to view request
-      navigate("/dashboard");
+      // Navigate to dashboard after a short delay
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
       
     } catch (error: any) {
-      toast({
-        title: "Submission failed",
-        description: error.message || "There was a problem submitting your request.",
-        variant: "destructive",
-      });
+      setSubmitError(error.message || "There was a problem submitting your request.");
     } finally {
       setIsLoading(false);
     }
@@ -152,6 +142,23 @@ const StandardRequestForm = () => {
       <CardHeader>
         <CardTitle>Standard Blood Request</CardTitle>
       </CardHeader>
+      
+      {submitError && (
+        <div className="px-6">
+          <Alert variant="destructive">
+            <AlertDescription>{submitError}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+      
+      {successMessage && (
+        <div className="px-6">
+          <Alert>
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
           <div className="space-y-1.5">

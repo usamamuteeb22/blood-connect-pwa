@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
@@ -13,7 +13,6 @@ import EligibilityFormActions from "@/components/donation/EligibilityFormActions
 
 const EligibilityForm = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   
   const [name, setName] = useState("");
@@ -26,6 +25,8 @@ const EligibilityForm = () => {
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -90,14 +91,11 @@ const EligibilityForm = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
+    setSuccessMessage("");
     
     if (!validateForm()) {
-      // Form has validation errors
-      toast({
-        title: "Form Validation Failed",
-        description: "Please correct the highlighted errors to continue.",
-        variant: "destructive",
-      });
+      setSubmitError("Please correct the highlighted errors to continue.");
       return;
     }
     
@@ -114,11 +112,7 @@ const EligibilityForm = () => {
         eligibilityError = "You must weigh at least 50kg to donate blood.";
       }
       
-      toast({
-        title: "Eligibility Check Failed",
-        description: eligibilityError,
-        variant: "destructive",
-      });
+      setSubmitError(eligibilityError);
       return;
     }
     
@@ -146,17 +140,14 @@ const EligibilityForm = () => {
       
       if (error) throw error;
       
-      toast({
-        title: "Registration Successful",
-        description: "You are now registered as a blood donor!",
-      });
-      navigate("/donate");
+      setSuccessMessage("You are now registered as a blood donor!");
+      
+      // Navigate to donate page after a short delay
+      setTimeout(() => {
+        navigate("/donate");
+      }, 2000);
     } catch (error: any) {
-      toast({
-        title: "Registration Failed",
-        description: error.message || "There was an error registering you as a donor.",
-        variant: "destructive",
-      });
+      setSubmitError(error.message || "There was an error registering you as a donor.");
     } finally {
       setIsLoading(false);
     }
@@ -178,6 +169,23 @@ const EligibilityForm = () => {
                 Complete this form to register as a blood donor and check your eligibility
               </CardDescription>
             </CardHeader>
+            
+            {submitError && (
+              <div className="px-6">
+                <Alert variant="destructive">
+                  <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
+              </div>
+            )}
+            
+            {successMessage && (
+              <div className="px-6">
+                <Alert>
+                  <AlertDescription>{successMessage}</AlertDescription>
+                </Alert>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-6">
                 <EligibilityFormFields

@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { BloodRequest } from "@/types/custom";
 import BloodRequestCard from "@/components/dashboard/BloodRequestCard";
-import { useToast } from "@/hooks/use-toast";
 
 interface DonorRequestsTabProps {
   donorRequests: BloodRequest[];
@@ -13,7 +12,6 @@ interface DonorRequestsTabProps {
 const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject }: DonorRequestsTabProps) => {
   // Only display pending requests
   const [requests, setRequests] = useState<BloodRequest[]>([]);
-  const { toast } = useToast();
 
   // Update local state whenever initialRequests changes, filtering for pending requests only
   useEffect(() => {
@@ -25,40 +23,36 @@ const DonorRequestsTab = ({ donorRequests: initialRequests, onApprove, onReject 
   // Handle approving a blood request
   const handleApprove = async (requestId: string) => {
     try {
-      await onApprove(requestId);
-      // Remove the approved request immediately from the local state
+      // Remove the request immediately from the local state
       setRequests(prevRequests => prevRequests.filter(request => request.id !== requestId));
       
-      toast({
-        title: "Request approved",
-        description: "You've successfully approved this blood donation request.",
-      });
+      // Call the parent handler
+      await onApprove(requestId);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve the request. Please try again.",
-        variant: "destructive",
-      });
+      // If there's an error, add the request back to the local state
+      const requestToRestore = initialRequests.find(req => req.id === requestId);
+      if (requestToRestore && requestToRestore.status === "pending") {
+        setRequests(prevRequests => [...prevRequests, requestToRestore]);
+      }
+      console.error("Failed to approve request:", error);
     }
   };
   
   // Handle rejecting a blood request
   const handleReject = async (requestId: string) => {
     try {
-      await onReject(requestId);
-      // Remove the rejected request immediately from the local state
+      // Remove the request immediately from the local state
       setRequests(prevRequests => prevRequests.filter(request => request.id !== requestId));
       
-      toast({
-        title: "Request rejected",
-        description: "You've rejected this blood donation request.",
-      });
+      // Call the parent handler
+      await onReject(requestId);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject the request. Please try again.",
-        variant: "destructive",
-      });
+      // If there's an error, add the request back to the local state
+      const requestToRestore = initialRequests.find(req => req.id === requestId);
+      if (requestToRestore && requestToRestore.status === "pending") {
+        setRequests(prevRequests => [...prevRequests, requestToRestore]);
+      }
+      console.error("Failed to reject request:", error);
     }
   };
 
