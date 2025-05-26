@@ -23,14 +23,43 @@ export function DashboardProvider({
   children: React.ReactNode;
   value: DashboardContextProps;
 }) {
-  // Ensure value is properly defined before providing it
+  // Add comprehensive validation
   if (!value) {
     console.error('DashboardProvider: value prop is required');
-    return <div>Dashboard context error</div>;
+    return <div>Dashboard context error: No value provided</div>;
   }
 
+  // Validate required functions
+  if (typeof value.onDonorSelect !== 'function') {
+    console.error('DashboardProvider: onDonorSelect must be a function');
+    return <div>Dashboard context error: Invalid onDonorSelect</div>;
+  }
+
+  if (typeof value.onApproveRequest !== 'function') {
+    console.error('DashboardProvider: onApproveRequest must be a function');
+    return <div>Dashboard context error: Invalid onApproveRequest</div>;
+  }
+
+  if (typeof value.onRejectRequest !== 'function') {
+    console.error('DashboardProvider: onRejectRequest must be a function');
+    return <div>Dashboard context error: Invalid onRejectRequest</div>;
+  }
+
+  // Ensure arrays are defined
+  const contextValue: DashboardContextProps = {
+    userDonor: value.userDonor || null,
+    userRequests: Array.isArray(value.userRequests) ? value.userRequests : [],
+    userDonations: Array.isArray(value.userDonations) ? value.userDonations : [],
+    donorRequests: Array.isArray(value.donorRequests) ? value.donorRequests : [],
+    donationCount: typeof value.donationCount === 'number' ? value.donationCount : 0,
+    nextEligibleDate: value.nextEligibleDate || null,
+    onDonorSelect: value.onDonorSelect,
+    onApproveRequest: value.onApproveRequest,
+    onRejectRequest: value.onRejectRequest,
+  };
+
   return (
-    <DashboardContext.Provider value={value}>
+    <DashboardContext.Provider value={contextValue}>
       {children}
     </DashboardContext.Provider>
   );

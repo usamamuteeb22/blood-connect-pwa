@@ -56,33 +56,34 @@ const Dashboard = () => {
 
   // Create wrapper functions to handle data refresh after actions
   const onSendRequest = async () => {
-    await handleSendRequest();
-    refreshData(); // Refresh data after sending request
+    try {
+      await handleSendRequest();
+      refreshData(); // Refresh data after sending request
+    } catch (error) {
+      console.error('Error sending request:', error);
+    }
   };
   
   const onApproveRequest = async (requestId: string) => {
-    const result = await handleApproveRequest(requestId);
-    refreshData(); // Refresh data after approving request
-    return result;
+    try {
+      const result = await handleApproveRequest(requestId);
+      refreshData(); // Refresh data after approving request
+      return result;
+    } catch (error) {
+      console.error('Error approving request:', error);
+      throw error;
+    }
   };
   
   const onRejectRequest = async (requestId: string) => {
-    const result = await handleRejectRequest(requestId);
-    refreshData(); // Refresh data after rejecting request
-    return result;
-  };
-
-  // Create context value with proper validation
-  const dashboardContextValue = {
-    userDonor: userDonor || null,
-    userRequests: userRequests || [],
-    userDonations: userDonations || [],
-    donorRequests: donorRequests || [],
-    donationCount: donationCount || 0,
-    nextEligibleDate: nextEligibleDate || null,
-    onDonorSelect: handleDonorSelect,
-    onApproveRequest,
-    onRejectRequest
+    try {
+      const result = await handleRejectRequest(requestId);
+      refreshData(); // Refresh data after rejecting request
+      return result;
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      throw error;
+    }
   };
 
   // Add loading state check
@@ -97,6 +98,19 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  // Create context value with proper validation and error handling
+  const dashboardContextValue = {
+    userDonor: userDonor || null,
+    userRequests: Array.isArray(userRequests) ? userRequests : [],
+    userDonations: Array.isArray(userDonations) ? userDonations : [],
+    donorRequests: Array.isArray(donorRequests) ? donorRequests : [],
+    donationCount: typeof donationCount === 'number' ? donationCount : 0,
+    nextEligibleDate: nextEligibleDate || null,
+    onDonorSelect: handleDonorSelect,
+    onApproveRequest,
+    onRejectRequest
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
