@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Phone, MapPin, Loader2 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+import { Donor } from '@/types/custom';
 
 // Fix for default markers in react-leaflet
 delete (Icon.Default.prototype as any)._getIconUrl;
@@ -16,17 +17,6 @@ Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-interface Donor {
-  id: string;
-  name: string;
-  blood_type: string;
-  latitude: number;
-  longitude: number;
-  availability: boolean;
-  city: string;
-  phone: string;
-}
 
 interface DonorMapProps {
   currentPosition?: { lat: number; lng: number };
@@ -81,27 +71,52 @@ const DonorMap: React.FC<DonorMapProps> = ({
         setLoading(true);
         setError(null);
         
-        // Simulate API call - replace with actual Supabase call
+        // Mock data that matches the Donor type from custom.ts
         const mockDonors: Donor[] = [
           {
             id: '1',
+            user_id: 'user-1',
             name: 'John Doe',
+            email: 'john@example.com',
+            phone: '+1-555-0123',
             blood_type: 'O+',
-            latitude: position.lat + 0.01,
-            longitude: position.lng + 0.01,
-            availability: true,
+            age: 28,
+            weight: 70,
             city: 'New York',
-            phone: '+1-555-0123'
+            address: '123 Main St, New York, NY',
+            next_eligible_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            is_eligible: true,
+            created_at: new Date().toISOString()
           },
           {
             id: '2',
+            user_id: 'user-2',
             name: 'Jane Smith',
+            email: 'jane@example.com',
+            phone: '+1-555-0456',
             blood_type: 'A+',
-            latitude: position.lat - 0.01,
-            longitude: position.lng - 0.01,
-            availability: true,
+            age: 32,
+            weight: 65,
             city: 'New York',
-            phone: '+1-555-0456'
+            address: '456 Oak Ave, New York, NY',
+            next_eligible_date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+            is_eligible: true,
+            created_at: new Date().toISOString()
+          },
+          {
+            id: '3',
+            user_id: 'user-3',
+            name: 'Mike Johnson',
+            email: 'mike@example.com',
+            phone: '+1-555-0789',
+            blood_type: 'B-',
+            age: 25,
+            weight: 80,
+            city: 'New York',
+            address: '789 Pine St, New York, NY',
+            next_eligible_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+            is_eligible: true,
+            created_at: new Date().toISOString()
           }
         ];
 
@@ -145,6 +160,16 @@ const DonorMap: React.FC<DonorMapProps> = ({
       iconAnchor: [12, 41],
       popupAnchor: [1, -34],
     });
+  };
+
+  // Generate mock coordinates near the user's position
+  const generateMockCoordinates = (index: number) => {
+    if (!position) return [0, 0];
+    
+    const latOffset = (Math.random() - 0.5) * 0.02; // ~1km radius
+    const lngOffset = (Math.random() - 0.5) * 0.02;
+    
+    return [position.lat + latOffset, position.lng + lngOffset];
   };
 
   if (!position) {
@@ -240,47 +265,50 @@ const DonorMap: React.FC<DonorMapProps> = ({
           </Marker>
           
           {/* Donor markers */}
-          {donors.map((donor) => (
-            <Marker
-              key={donor.id}
-              position={[donor.latitude, donor.longitude]}
-              icon={createBloodTypeIcon(donor.blood_type)}
-            >
-              <Popup>
-                <div className="p-2 min-w-[200px]">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-lg">{donor.name}</h3>
-                    <Badge variant="secondary" className="bg-red-600 text-white">
-                      {donor.blood_type}
-                    </Badge>
+          {donors.map((donor, index) => {
+            const [lat, lng] = generateMockCoordinates(index);
+            return (
+              <Marker
+                key={donor.id}
+                position={[lat, lng]}
+                icon={createBloodTypeIcon(donor.blood_type)}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg">{donor.name}</h3>
+                      <Badge variant="secondary" className="bg-red-600 text-white">
+                        {donor.blood_type}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4" />
+                        <span>{donor.city}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone className="h-4 w-4" />
+                        <span>{donor.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${donor.is_eligible ? 'bg-green-500' : 'bg-gray-400'}`} />
+                        <span className="text-sm">{donor.is_eligible ? 'Available' : 'Not Available'}</span>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => onDonorSelect(donor)}
+                      className="w-full bg-red-600 hover:bg-red-700"
+                      disabled={!donor.is_eligible}
+                    >
+                      Request Blood
+                    </Button>
                   </div>
-                  
-                  <div className="space-y-2 mb-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4" />
-                      <span>{donor.city}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{donor.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${donor.availability ? 'bg-green-500' : 'bg-gray-400'}`} />
-                      <span className="text-sm">{donor.availability ? 'Available' : 'Not Available'}</span>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    onClick={() => onDonorSelect(donor)}
-                    className="w-full bg-red-600 hover:bg-red-700"
-                    disabled={!donor.availability}
-                  >
-                    Request Blood
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
       
