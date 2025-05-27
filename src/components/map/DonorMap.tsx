@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Phone, MapPin, Loader2 } from 'lucide-react';
+import { Phone, MapPin, Loader2, AlertCircle } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import { Donor } from '@/types/custom';
 
@@ -37,6 +37,7 @@ const DonorMap: React.FC<DonorMapProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [radius, setRadius] = useState(radiusKm);
   const [bloodFilter, setBloodFilter] = useState<string[]>(bloodTypeFilter);
+  const [mapReady, setMapReady] = useState(false);
 
   // Get current location if not provided
   useEffect(() => {
@@ -174,9 +175,15 @@ const DonorMap: React.FC<DonorMapProps> = ({
 
   if (!position) {
     return (
-      <div className="h-96 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading map...</span>
+      <div className="space-y-4">
+        <Card className="p-6">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600">Getting your location...</p>
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -230,91 +237,108 @@ const DonorMap: React.FC<DonorMapProps> = ({
 
       {/* Error display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
+        <Card className="p-4 border-red-200 bg-red-50">
+          <div className="flex items-center gap-2 text-red-700">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+        </Card>
       )}
 
       {/* Map container */}
-      <div className="h-96 w-full rounded-lg overflow-hidden shadow-lg relative">
-        {loading && (
-          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading donors...</span>
-          </div>
-        )}
-        
-        <MapContainer
-          center={mapCenter}
-          zoom={13}
-          style={{ height: '100%', width: '100%' }}
-          className="z-0"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          
-          {/* Current location marker */}
-          <Marker position={mapCenter}>
-            <Popup>
+      <Card className="overflow-hidden">
+        <div className="h-96 w-full relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
               <div className="text-center">
-                <strong>Your Location</strong>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                <p className="text-gray-600">Loading donors...</p>
               </div>
-            </Popup>
-          </Marker>
+            </div>
+          )}
           
-          {/* Donor markers */}
-          {donors.map((donor, index) => {
-            const [lat, lng] = generateMockCoordinates(index);
-            return (
-              <Marker
-                key={donor.id}
-                position={[lat, lng]}
-                icon={createBloodTypeIcon(donor.blood_type)}
-              >
-                <Popup>
-                  <div className="p-2 min-w-[200px]">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-lg">{donor.name}</h3>
-                      <Badge variant="secondary" className="bg-red-600 text-white">
-                        {donor.blood_type}
-                      </Badge>
+          <MapContainer
+            center={mapCenter}
+            zoom={13}
+            style={{ height: '100%', width: '100%' }}
+            className="z-0"
+            whenReady={() => setMapReady(true)}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            
+            {/* Current location marker */}
+            <Marker position={mapCenter}>
+              <Popup>
+                <div className="text-center">
+                  <strong>Your Location</strong>
+                </div>
+              </Popup>
+            </Marker>
+            
+            {/* Donor markers */}
+            {donors.map((donor, index) => {
+              const [lat, lng] = generateMockCoordinates(index);
+              return (
+                <Marker
+                  key={donor.id}
+                  position={[lat, lng]}
+                  icon={createBloodTypeIcon(donor.blood_type)}
+                >
+                  <Popup>
+                    <div className="p-2 min-w-[200px]">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-lg">{donor.name}</h3>
+                        <Badge variant="secondary" className="bg-red-600 text-white">
+                          {donor.blood_type}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          <span>{donor.city}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone className="h-4 w-4" />
+                          <span>{donor.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${donor.is_eligible ? 'bg-green-500' : 'bg-gray-400'}`} />
+                          <span className="text-sm">{donor.is_eligible ? 'Available' : 'Not Available'}</span>
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={() => onDonorSelect(donor)}
+                        className="w-full bg-red-600 hover:bg-red-700"
+                        disabled={!donor.is_eligible}
+                      >
+                        Request Blood
+                      </Button>
                     </div>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <MapPin className="h-4 w-4" />
-                        <span>{donor.city}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="h-4 w-4" />
-                        <span>{donor.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${donor.is_eligible ? 'bg-green-500' : 'bg-gray-400'}`} />
-                        <span className="text-sm">{donor.is_eligible ? 'Available' : 'Not Available'}</span>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      onClick={() => onDonorSelect(donor)}
-                      className="w-full bg-red-600 hover:bg-red-700"
-                      disabled={!donor.is_eligible}
-                    >
-                      Request Blood
-                    </Button>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
-      </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        </div>
+      </Card>
       
-      <div className="text-sm text-gray-600 text-center">
-        Found {donors.length} available donors within {radius}km
-      </div>
+      {/* Results summary */}
+      <Card className="p-4">
+        <div className="text-center text-sm text-gray-600">
+          Found {donors.length} available donors within {radius}km
+          {!mapReady && (
+            <div className="mt-2 text-yellow-600">
+              <AlertCircle className="h-4 w-4 inline mr-1" />
+              Map is loading...
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 };
