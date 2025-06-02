@@ -8,7 +8,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { useMapDonors } from '@/hooks/useMapDonors';
 import MapFilters from './MapFilters';
 import DonorCard from './DonorCard';
-import GoogleMap from './GoogleMap';
+import MapLibreMap from './MapLibreMap';
 
 interface DonorMapProps {
   currentPosition?: { lat: number; lng: number };
@@ -150,21 +150,23 @@ const DonorMap: React.FC<DonorMapProps> = ({
       )}
 
       {/* Interactive Map */}
-      {!loading && currentPosition && (
+      {!loading && (
         <Card className="overflow-hidden">
           <div className="p-4">
             <h3 className="text-lg font-semibold mb-4">Interactive Map</h3>
-            <GoogleMap
-              donors={donorsWithCoordinates}
-              currentPosition={currentPosition}
-              onDonorSelect={handleDonorSelect}
-            />
-            {donorsWithCoordinates.length === 0 && donors.length > 0 && (
-              <Alert className="mt-4">
-                <AlertDescription>
-                  No donors with location coordinates found. Showing list view below.
-                </AlertDescription>
-              </Alert>
+            {donorsWithCoordinates.length > 0 ? (
+              <MapLibreMap
+                donors={donorsWithCoordinates}
+                currentPosition={currentPosition}
+                onDonorSelect={handleDonorSelect}
+              />
+            ) : (
+              <div className="h-96 w-full bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-center text-gray-600">
+                  <p className="text-lg font-medium mb-2">No donors with location coordinates found</p>
+                  <p className="text-sm">Showing list view below.</p>
+                </div>
+              </div>
             )}
           </div>
         </Card>

@@ -61,7 +61,7 @@ const MapFilters: React.FC<MapFiltersProps> = ({
             </SelectContent>
           </Select>
           <p className="text-xs text-gray-500">
-            Based on real coordinates when available
+            Real distance calculation using stored coordinates
           </p>
         </div>
         
