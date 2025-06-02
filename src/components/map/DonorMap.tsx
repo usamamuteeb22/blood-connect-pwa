@@ -1,22 +1,25 @@
 
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Icon, LatLngExpression } from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Phone, MapPin, Loader2, AlertCircle } from 'lucide-react';
-import 'leaflet/dist/leaflet.css';
 import { Donor } from '@/types/custom';
 
-// Fix for default markers in react-leaflet
-delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// Lazy load map components to avoid SSR issues
+const LazyMapContainer = React.lazy(() => 
+  import('react-leaflet').then(mod => ({ default: mod.MapContainer }))
+);
+const LazyTileLayer = React.lazy(() => 
+  import('react-leaflet').then(mod => ({ default: mod.TileLayer }))
+);
+const LazyMarker = React.lazy(() => 
+  import('react-leaflet').then(mod => ({ default: mod.Marker }))
+);
+const LazyPopup = React.lazy(() => 
+  import('react-leaflet').then(mod => ({ default: mod.Popup }))
+);
 
 interface DonorMapProps {
   currentPosition?: { lat: number; lng: number };
@@ -38,6 +41,12 @@ const DonorMap: React.FC<DonorMapProps> = ({
   const [radius, setRadius] = useState(radiusKm);
   const [bloodFilter, setBloodFilter] = useState<string[]>(bloodTypeFilter);
   const [mapReady, setMapReady] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure component only renders on client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Get current location if not provided
   useEffect(() => {
@@ -138,31 +147,6 @@ const DonorMap: React.FC<DonorMapProps> = ({
     fetchDonors();
   }, [position, radius, bloodFilter]);
 
-  // Create custom icons for different blood types
-  const createBloodTypeIcon = (bloodType: string) => {
-    const colorMap: Record<string, string> = {
-      'O+': '#dc2626', 'O-': '#991b1b',
-      'A+': '#2563eb', 'A-': '#1d4ed8',
-      'B+': '#059669', 'B-': '#047857',
-      'AB+': '#7c3aed', 'AB-': '#6d28d9'
-    };
-    
-    const color = colorMap[bloodType] || '#6b7280';
-    
-    return new Icon({
-      iconUrl: `data:image/svg+xml;base64,${btoa(`
-        <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
-          <path fill="${color}" stroke="#fff" stroke-width="2" d="M12.5 0C7.84 0 4 3.84 4 8.5c0 8.5 8.5 17 8.5 17s8.5-8.5 8.5-17C21 3.84 17.16 0 12.5 0z"/>
-          <circle cx="12.5" cy="8.5" r="4" fill="#fff"/>
-          <text x="12.5" y="12" text-anchor="middle" fill="${color}" font-size="7" font-weight="bold">${bloodType}</text>
-        </svg>
-      `)}`,
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-    });
-  };
-
   // Generate mock coordinates near the user's position
   const generateMockCoordinates = (index: number) => {
     if (!position) return [0, 0];
@@ -173,7 +157,7 @@ const DonorMap: React.FC<DonorMapProps> = ({
     return [position.lat + latOffset, position.lng + lngOffset];
   };
 
-  if (!position) {
+  if (!position || !isClient) {
     return (
       <div className="space-y-4">
         <Card className="p-6">
@@ -187,8 +171,6 @@ const DonorMap: React.FC<DonorMapProps> = ({
       </div>
     );
   }
-
-  const mapCenter: LatLngExpression = [position.lat, position.lng];
 
   return (
     <div className="space-y-4">
@@ -257,73 +239,78 @@ const DonorMap: React.FC<DonorMapProps> = ({
             </div>
           )}
           
-          <MapContainer
-            center={mapCenter}
-            zoom={13}
-            style={{ height: '100%', width: '100%' }}
-            className="z-0"
-            whenReady={() => setMapReady(true)}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {/* Current location marker */}
-            <Marker position={mapCenter}>
-              <Popup>
-                <div className="text-center">
-                  <strong>Your Location</strong>
-                </div>
-              </Popup>
-            </Marker>
-            
-            {/* Donor markers */}
-            {donors.map((donor, index) => {
-              const [lat, lng] = generateMockCoordinates(index);
-              return (
-                <Marker
-                  key={donor.id}
-                  position={[lat, lng]}
-                  icon={createBloodTypeIcon(donor.blood_type)}
-                >
-                  <Popup>
-                    <div className="p-2 min-w-[200px]">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-lg">{donor.name}</h3>
-                        <Badge variant="secondary" className="bg-red-600 text-white">
-                          {donor.blood_type}
-                        </Badge>
+          <React.Suspense fallback={
+            <div className="h-full flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          }>
+            <LazyMapContainer
+              center={[position.lat, position.lng]}
+              zoom={13}
+              style={{ height: '100%', width: '100%' }}
+              className="z-0"
+              whenReady={() => setMapReady(true)}
+            >
+              <LazyTileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              
+              {/* Current location marker */}
+              <LazyMarker position={[position.lat, position.lng]}>
+                <LazyPopup>
+                  <div className="text-center">
+                    <strong>Your Location</strong>
+                  </div>
+                </LazyPopup>
+              </LazyMarker>
+              
+              {/* Donor markers */}
+              {donors.map((donor, index) => {
+                const [lat, lng] = generateMockCoordinates(index);
+                return (
+                  <LazyMarker
+                    key={donor.id}
+                    position={[lat, lng]}
+                  >
+                    <LazyPopup>
+                      <div className="p-2 min-w-[200px]">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-lg">{donor.name}</h3>
+                          <Badge variant="secondary" className="bg-red-600 text-white">
+                            {donor.blood_type}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin className="h-4 w-4" />
+                            <span>{donor.city}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="h-4 w-4" />
+                            <span>{donor.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${donor.is_eligible ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            <span className="text-sm">{donor.is_eligible ? 'Available' : 'Not Available'}</span>
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          onClick={() => onDonorSelect(donor)}
+                          className="w-full bg-red-600 hover:bg-red-700"
+                          disabled={!donor.is_eligible}
+                        >
+                          Request Blood
+                        </Button>
                       </div>
-                      
-                      <div className="space-y-2 mb-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="h-4 w-4" />
-                          <span>{donor.city}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="h-4 w-4" />
-                          <span>{donor.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${donor.is_eligible ? 'bg-green-500' : 'bg-gray-400'}`} />
-                          <span className="text-sm">{donor.is_eligible ? 'Available' : 'Not Available'}</span>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        onClick={() => onDonorSelect(donor)}
-                        className="w-full bg-red-600 hover:bg-red-700"
-                        disabled={!donor.is_eligible}
-                      >
-                        Request Blood
-                      </Button>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MapContainer>
+                    </LazyPopup>
+                  </LazyMarker>
+                );
+              })}
+            </LazyMapContainer>
+          </React.Suspense>
         </div>
       </Card>
       
