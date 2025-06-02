@@ -4,11 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Phone, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { Phone, MapPin, Loader2, AlertCircle, Navigation } from 'lucide-react';
 import { Donor } from '@/types/custom';
-
-// Simple dynamic import for the entire map component
-const MapComponent = React.lazy(() => import('./MapView'));
 
 interface DonorMapProps {
   currentPosition?: { lat: number; lng: number };
@@ -29,12 +26,7 @@ const DonorMap: React.FC<DonorMapProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [radius, setRadius] = useState(radiusKm);
   const [bloodFilter, setBloodFilter] = useState<string[]>(bloodTypeFilter);
-  const [isClient, setIsClient] = useState(false);
-
-  // Ensure component only renders on client side
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
 
   // Get current location if not provided
   useEffect(() => {
@@ -135,17 +127,7 @@ const DonorMap: React.FC<DonorMapProps> = ({
     fetchDonors();
   }, [position, radius, bloodFilter]);
 
-  // Generate mock coordinates near the user's position
-  const generateMockCoordinates = (index: number) => {
-    if (!position) return [0, 0];
-    
-    const latOffset = (Math.random() - 0.5) * 0.02; // ~1km radius
-    const lngOffset = (Math.random() - 0.5) * 0.02;
-    
-    return [position.lat + latOffset, position.lng + lngOffset];
-  };
-
-  if (!position || !isClient) {
+  if (!position) {
     return (
       <div className="space-y-4">
         <Card className="p-6">
@@ -215,9 +197,9 @@ const DonorMap: React.FC<DonorMapProps> = ({
         </Card>
       )}
 
-      {/* Map container */}
+      {/* Map placeholder with donor list */}
       <Card className="overflow-hidden">
-        <div className="h-96 w-full relative">
+        <div className="h-96 w-full relative bg-gradient-to-br from-blue-50 to-green-50">
           {loading && (
             <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
               <div className="text-center">
@@ -227,20 +209,95 @@ const DonorMap: React.FC<DonorMapProps> = ({
             </div>
           )}
           
-          <React.Suspense fallback={
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin" />
+          {/* Current location indicator */}
+          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md p-3 z-10">
+            <div className="flex items-center gap-2">
+              <Navigation className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium">Your Location</span>
             </div>
-          }>
-            <MapComponent
-              position={position}
-              donors={donors}
-              onDonorSelect={onDonorSelect}
-              generateMockCoordinates={generateMockCoordinates}
-            />
-          </React.Suspense>
+            <div className="text-xs text-gray-600 mt-1">
+              {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
+            </div>
+          </div>
+
+          {/* Donor markers simulation */}
+          <div className="absolute inset-0 p-4">
+            <div className="text-center mt-20">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Interactive Map Coming Soon</h3>
+              <p className="text-gray-600 mb-6">View available donors in your area</p>
+              
+              {/* Simulated markers */}
+              <div className="grid gap-2 max-w-md mx-auto">
+                {donors.slice(0, 3).map((donor, index) => (
+                  <div 
+                    key={donor.id}
+                    className="bg-white rounded-lg shadow-sm border p-3 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => setSelectedDonor(donor)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <div>
+                          <div className="font-medium text-sm">{donor.name}</div>
+                          <div className="text-xs text-gray-600">{donor.city}</div>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-red-600 text-white text-xs">
+                        {donor.blood_type}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </Card>
+
+      {/* Selected donor details */}
+      {selectedDonor && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Selected Donor</h3>
+            <Button variant="outline" size="sm" onClick={() => setSelectedDonor(null)}>
+              Close
+            </Button>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-medium mb-2">{selectedDonor.name}</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-400" />
+                  <span>{selectedDonor.city}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <span>{selectedDonor.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-red-600 text-white">
+                    {selectedDonor.blood_type}
+                  </Badge>
+                  <div className={`h-2 w-2 rounded-full ${selectedDonor.is_eligible ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <span className="text-sm">{selectedDonor.is_eligible ? 'Available' : 'Not Available'}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-end">
+              <Button 
+                onClick={() => onDonorSelect(selectedDonor)}
+                className="w-full bg-red-600 hover:bg-red-700"
+                disabled={!selectedDonor.is_eligible}
+              >
+                Request Blood
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
       
       {/* Results summary */}
       <Card className="p-4">
