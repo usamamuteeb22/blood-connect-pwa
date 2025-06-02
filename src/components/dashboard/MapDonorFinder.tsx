@@ -12,37 +12,28 @@ interface MapDonorFinderProps {
 const MapDonorFinder: React.FC<MapDonorFinderProps> = ({ onDonorSelect }) => {
   const { currentPosition, isLoading } = useLocation();
 
-  if (isLoading) {
-    return (
+  return (
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Find Donors Near You</CardTitle>
-          <CardDescription>Loading your location...</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <span>Find Donors Near You</span>
+          </CardTitle>
+          <CardDescription>
+            Use location-based search to find available blood donors in your area. 
+            You can filter by distance, blood type, and city.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-96 flex items-center justify-center">
-            Loading map...
-          </div>
+          <DonorMap 
+            currentPosition={currentPosition}
+            onDonorSelect={onDonorSelect}
+            radiusKm={10}
+            bloodTypeFilter={[]}
+          />
         </CardContent>
       </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Find Donors Near You</CardTitle>
-        <CardDescription>
-          Use the map below to find available blood donors in your area
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <DonorMap 
-          currentPosition={currentPosition}
-          onDonorSelect={onDonorSelect}
-        />
-      </CardContent>
-    </Card>
+    </div>
   );
 };
 

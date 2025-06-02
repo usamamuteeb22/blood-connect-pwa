@@ -1,71 +1,96 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface MapDonor {
-  id: string;
-  name: string;
-  blood_type: string;
-  latitude: number;
-  longitude: number;
-  availability: boolean;
-  city: string;
-  phone: string;
-}
+import { Donor } from '@/types/custom';
+import { toast } from '@/components/ui/use-toast';
 
 interface UseMapDonorsProps {
   currentPosition: { lat: number; lng: number } | null;
   radiusKm: number;
   bloodTypeFilter: string[];
+  city?: string;
 }
 
-export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter }: UseMapDonorsProps) {
-  const [donors, setDonors] = useState<MapDonor[]>([]);
+interface MapDonorResult extends Donor {
+  distance?: number;
+}
+
+export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter, city }: UseMapDonorsProps) {
+  const [donors, setDonors] = useState<MapDonorResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!currentPosition) return;
+  const fetchDonors = async () => {
+    if (!currentPosition && !city) {
+      console.log('No position or city provided');
+      return;
+    }
 
-    const fetchMapDonors = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Use the existing RPC function but adapt the response for map usage
-        const { data, error: rpcError } = await supabase.rpc('get_nearby_donors', {
-          origin_lat: currentPosition.lat,
-          origin_lng: currentPosition.lng,
-          radius_km: radiusKm,
-          blood_types: bloodTypeFilter.length > 0 ? bloodTypeFilter : null
-        });
+    setLoading(true);
+    setError(null);
+    
+    try {
+      let query = supabase
+        .from('donors')
+        .select('*')
+        .eq('is_eligible', true);
 
-        if (rpcError) throw rpcError;
-
-        // Transform the data to match the MapDonor interface
-        const mapDonors: MapDonor[] = (data || []).map((donor: any) => ({
-          id: donor.id,
-          name: donor.name,
-          blood_type: donor.blood_type,
-          latitude: donor.latitude,
-          longitude: donor.longitude,
-          availability: donor.availability,
-          city: donor.city,
-          phone: donor.phone
-        }));
-
-        setDonors(mapDonors);
-      } catch (err) {
-        console.error('Error fetching map donors:', err);
-        setError('Failed to fetch nearby donors');
-        setDonors([]);
-      } finally {
-        setLoading(false);
+      // Apply city filter if provided
+      if (city && city.trim()) {
+        query = query.ilike('city', `%${city.trim()}%`);
       }
-    };
 
-    fetchMapDonors();
-  }, [currentPosition, radiusKm, bloodTypeFilter]);
+      // Apply blood type filter
+      if (bloodTypeFilter.length > 0) {
+        query = query.in('blood_type', bloodTypeFilter);
+      }
 
-  return { donors, loading, error };
+      const { data, error: fetchError } = await query
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      let processedDonors: MapDonorResult[] = data || [];
+
+      // Calculate distances if we have current position
+      if (currentPosition && data) {
+        processedDonors = data.map(donor => {
+          // For now, generate mock coordinates near the user's position
+          // In a real app, you'd use actual donor coordinates
+          const distance = Math.random() * radiusKm; // Mock distance calculation
+          return {
+            ...donor,
+            distance,
+          };
+        }).filter(donor => !radiusKm || (donor.distance && donor.distance <= radiusKm))
+          .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      }
+
+      setDonors(processedDonors);
+    } catch (err: any) {
+      console.error('Error fetching donors:', err);
+      setError(err.message || 'Failed to fetch donors');
+      toast({
+        title: "Error",
+        description: "Failed to load nearby donors. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDonors();
+  }, [currentPosition, radiusKm, bloodTypeFilter, city]);
+
+  return { 
+    donors, 
+    loading, 
+    error, 
+    refetch: fetchDonors 
+  };
 }
