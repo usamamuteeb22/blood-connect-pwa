@@ -7,19 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Phone, MapPin, Loader2, AlertCircle } from 'lucide-react';
 import { Donor } from '@/types/custom';
 
-// Lazy load map components to avoid SSR issues
-const LazyMapContainer = React.lazy(() => 
-  import('react-leaflet').then(mod => ({ default: mod.MapContainer }))
-);
-const LazyTileLayer = React.lazy(() => 
-  import('react-leaflet').then(mod => ({ default: mod.TileLayer }))
-);
-const LazyMarker = React.lazy(() => 
-  import('react-leaflet').then(mod => ({ default: mod.Marker }))
-);
-const LazyPopup = React.lazy(() => 
-  import('react-leaflet').then(mod => ({ default: mod.Popup }))
-);
+// Simple dynamic import for the entire map component
+const MapComponent = React.lazy(() => import('./MapView'));
 
 interface DonorMapProps {
   currentPosition?: { lat: number; lng: number };
@@ -40,7 +29,6 @@ const DonorMap: React.FC<DonorMapProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [radius, setRadius] = useState(radiusKm);
   const [bloodFilter, setBloodFilter] = useState<string[]>(bloodTypeFilter);
-  const [mapReady, setMapReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   // Ensure component only renders on client side
@@ -244,72 +232,12 @@ const DonorMap: React.FC<DonorMapProps> = ({
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           }>
-            <LazyMapContainer
-              center={[position.lat, position.lng]}
-              zoom={13}
-              style={{ height: '100%', width: '100%' }}
-              className="z-0"
-              whenReady={() => setMapReady(true)}
-            >
-              <LazyTileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              
-              {/* Current location marker */}
-              <LazyMarker position={[position.lat, position.lng]}>
-                <LazyPopup>
-                  <div className="text-center">
-                    <strong>Your Location</strong>
-                  </div>
-                </LazyPopup>
-              </LazyMarker>
-              
-              {/* Donor markers */}
-              {donors.map((donor, index) => {
-                const [lat, lng] = generateMockCoordinates(index);
-                return (
-                  <LazyMarker
-                    key={donor.id}
-                    position={[lat, lng]}
-                  >
-                    <LazyPopup>
-                      <div className="p-2 min-w-[200px]">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-lg">{donor.name}</h3>
-                          <Badge variant="secondary" className="bg-red-600 text-white">
-                            {donor.blood_type}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-2 mb-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MapPin className="h-4 w-4" />
-                            <span>{donor.city}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Phone className="h-4 w-4" />
-                            <span>{donor.phone}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${donor.is_eligible ? 'bg-green-500' : 'bg-gray-400'}`} />
-                            <span className="text-sm">{donor.is_eligible ? 'Available' : 'Not Available'}</span>
-                          </div>
-                        </div>
-                        
-                        <Button 
-                          onClick={() => onDonorSelect(donor)}
-                          className="w-full bg-red-600 hover:bg-red-700"
-                          disabled={!donor.is_eligible}
-                        >
-                          Request Blood
-                        </Button>
-                      </div>
-                    </LazyPopup>
-                  </LazyMarker>
-                );
-              })}
-            </LazyMapContainer>
+            <MapComponent
+              position={position}
+              donors={donors}
+              onDonorSelect={onDonorSelect}
+              generateMockCoordinates={generateMockCoordinates}
+            />
           </React.Suspense>
         </div>
       </Card>
@@ -318,12 +246,6 @@ const DonorMap: React.FC<DonorMapProps> = ({
       <Card className="p-4">
         <div className="text-center text-sm text-gray-600">
           Found {donors.length} available donors within {radius}km
-          {!mapReady && (
-            <div className="mt-2 text-yellow-600">
-              <AlertCircle className="h-4 w-4 inline mr-1" />
-              Map is loading...
-            </div>
-          )}
         </div>
       </Card>
     </div>
