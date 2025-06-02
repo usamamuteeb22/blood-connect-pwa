@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Navigation, Users, MapPin } from 'lucide-react';
+import { Loader2, AlertCircle, Navigation, Users } from 'lucide-react';
 import { Donor } from '@/types/custom';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useMapDonors } from '@/hooks/useMapDonors';
 import MapFilters from './MapFilters';
 import DonorCard from './DonorCard';
+import GoogleMap from './GoogleMap';
 
 interface DonorMapProps {
   currentPosition?: { lat: number; lng: number };
@@ -48,6 +49,11 @@ const DonorMap: React.FC<DonorMapProps> = ({
   };
 
   const loading = locationLoading || donorsLoading;
+
+  // Filter donors with valid coordinates for map display
+  const donorsWithCoordinates = donors.filter(donor => 
+    donor.latitude !== null && donor.longitude !== null
+  );
 
   return (
     <div className="space-y-6">
@@ -125,6 +131,11 @@ const DonorMap: React.FC<DonorMapProps> = ({
               {radius && (
                 <span className="text-gray-600">within {radius}km</span>
               )}
+              {donorsWithCoordinates.length < donors.length && (
+                <span className="text-sm text-gray-500">
+                  ({donorsWithCoordinates.length} with location data)
+                </span>
+              )}
             </div>
             {bloodFilter.length > 0 && (
               <div className="flex items-center gap-2">
@@ -138,18 +149,23 @@ const DonorMap: React.FC<DonorMapProps> = ({
         </Card>
       )}
 
-      {/* Map Placeholder */}
+      {/* Interactive Map */}
       {!loading && currentPosition && (
         <Card className="overflow-hidden">
-          <div className="h-96 w-full relative bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
-            <div className="text-center">
-              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Interactive Map</h3>
-              <p className="text-gray-600 mb-4">Map integration coming soon</p>
-              <div className="text-sm text-gray-500">
-                Showing {donors.length} donors near your location
-              </div>
-            </div>
+          <div className="p-4">
+            <h3 className="text-lg font-semibold mb-4">Interactive Map</h3>
+            <GoogleMap
+              donors={donorsWithCoordinates}
+              currentPosition={currentPosition}
+              onDonorSelect={handleDonorSelect}
+            />
+            {donorsWithCoordinates.length === 0 && donors.length > 0 && (
+              <Alert className="mt-4">
+                <AlertDescription>
+                  No donors with location coordinates found. Showing list view below.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </Card>
       )}

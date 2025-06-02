@@ -46,7 +46,7 @@ const MapFilters: React.FC<MapFiltersProps> = ({
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="radius-filter">Search Radius</Label>
+          <Label htmlFor="radius-filter">Search Radius (km)</Label>
           <Select value={radius.toString()} onValueChange={(value) => onRadiusChange(Number(value))}>
             <SelectTrigger id="radius-filter">
               <SelectValue />
@@ -57,8 +57,12 @@ const MapFilters: React.FC<MapFiltersProps> = ({
               <SelectItem value="20">20 km</SelectItem>
               <SelectItem value="50">50 km</SelectItem>
               <SelectItem value="100">100 km</SelectItem>
+              <SelectItem value="200">200 km</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-gray-500">
+            Based on real coordinates when available
+          </p>
         </div>
         
         <div className="space-y-2">

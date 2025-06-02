@@ -1,21 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLocation } from "@/contexts/LocationContext";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import EligibilityFormFields from "@/components/donation/EligibilityFormFields";
 import EligibilityNotice from "@/components/donation/EligibilityNotice";
 import EligibilityFormActions from "@/components/donation/EligibilityFormActions";
 
+// Reverse geocoding function using OpenCage API (free tier available)
+const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+  try {
+    // Using OpenCage Geocoding API (you can also use Google Maps Geocoding API)
+    // For production, you'd need to add your API key
+    const response = await fetch(
+      `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=YOUR_API_KEY&limit=1`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Geocoding failed');
+    }
+    
+    const data = await response.json();
+    if (data.results && data.results.length > 0) {
+      const components = data.results[0].components;
+      return components.city || components.town || components.village || components.county || 'Unknown City';
+    }
+    
+    throw new Error('No results found');
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    // Fallback: extract city from form input
+    return 'Unknown City';
+  }
+};
+
 const EligibilityForm = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { currentPosition, getCurrentLocation } = useLocation();
+  const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,9 +52,55 @@ const EligibilityForm = () => {
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  
+  const getCurrentLocation = () => {
+    setLocationLoading(true);
+    
+    if (!navigator.geolocation) {
+      setLocationLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setCurrentPosition(coords);
+        
+        // Try to get city from coordinates
+        try {
+          const detectedCity = await reverseGeocode(coords.lat, coords.lng);
+          if (detectedCity !== 'Unknown City') {
+            setCity(detectedCity);
+          }
+        } catch (error) {
+          console.error('Failed to get city from coordinates:', error);
+        }
+        
+        setLocationLoading(false);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
+      }
+    );
+  };
+
+  // Auto-fetch location on component mount
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -121,12 +193,7 @@ const EligibilityForm = () => {
     setIsLoading(true);
     
     try {
-      // Get current location if not available
-      if (!currentPosition) {
-        await getCurrentLocation();
-      }
-
-      // Register user as donor in Supabase with location data
+      // Register user as donor in Supabase with accurate location data
       const { error } = await supabase
         .from('donors')
         .insert([
@@ -138,7 +205,7 @@ const EligibilityForm = () => {
             blood_type: bloodGroup,
             age: ageValue,
             weight: weightValue,
-            city,
+            city: city.trim(),
             address,
             latitude: currentPosition?.lat || null,
             longitude: currentPosition?.lng || null,
@@ -200,15 +267,33 @@ const EligibilityForm = () => {
               <div className="px-6">
                 <Alert>
                   <AlertDescription className="flex items-center justify-between">
-                    <span>Enable location access to help others find you as a donor</span>
-                    <Button 
-                      onClick={getCurrentLocation} 
-                      variant="outline" 
-                      size="sm"
-                      className="ml-2"
-                    >
-                      Enable Location
-                    </Button>
+                    <span>
+                      {locationLoading 
+                        ? "Getting your location..." 
+                        : "Enable location access to help others find you as a donor"
+                      }
+                    </span>
+                    {!locationLoading && (
+                      <Button 
+                        onClick={getCurrentLocation} 
+                        variant="outline" 
+                        size="sm"
+                        className="ml-2"
+                      >
+                        Enable Location
+                      </Button>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+            
+            {currentPosition && (
+              <div className="px-6">
+                <Alert>
+                  <AlertDescription>
+                    ✅ Location detected: {currentPosition.lat.toFixed(4)}, {currentPosition.lng.toFixed(4)}
+                    {city && ` (${city})`}
                   </AlertDescription>
                 </Alert>
               </div>

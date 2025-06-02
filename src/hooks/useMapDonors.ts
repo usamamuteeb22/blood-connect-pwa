@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Donor } from '@/types/custom';
 import { toast } from '@/components/ui/use-toast';
+import { calculateDistance, isValidCoordinate } from '@/utils/mapUtils';
 
 interface UseMapDonorsProps {
   currentPosition: { lat: number; lng: number } | null;
@@ -47,7 +48,7 @@ export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter, city 
 
       const { data, error: fetchError } = await query
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100); // Increase limit for better coverage
 
       if (fetchError) {
         throw fetchError;
@@ -55,18 +56,38 @@ export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter, city 
 
       let processedDonors: MapDonorResult[] = data || [];
 
-      // Calculate distances if we have current position
+      // Calculate real distances if we have current position
       if (currentPosition && data) {
         processedDonors = data.map(donor => {
-          // For now, generate mock coordinates near the user's position
-          // In a real app, you'd use actual donor coordinates
-          const distance = Math.random() * radiusKm; // Mock distance calculation
+          let distance: number | undefined;
+          
+          // Calculate real distance using coordinates
+          if (isValidCoordinate(donor.latitude, donor.longitude)) {
+            distance = calculateDistance(
+              currentPosition.lat,
+              currentPosition.lng,
+              donor.latitude!,
+              donor.longitude!
+            );
+          }
+          
           return {
             ...donor,
             distance,
           };
-        }).filter(donor => !radiusKm || (donor.distance && donor.distance <= radiusKm))
-          .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+        })
+        // Filter by radius if distance was calculated
+        .filter(donor => {
+          if (donor.distance === undefined) return true; // Include donors without coordinates
+          return donor.distance <= radiusKm;
+        })
+        // Sort by distance (donors without coordinates at the end)
+        .sort((a, b) => {
+          if (a.distance === undefined && b.distance === undefined) return 0;
+          if (a.distance === undefined) return 1;
+          if (b.distance === undefined) return -1;
+          return a.distance - b.distance;
+        });
       }
 
       setDonors(processedDonors);
