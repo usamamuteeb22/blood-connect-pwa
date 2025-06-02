@@ -18,6 +18,7 @@ declare global {
   interface Window {
     google: any;
     initGoogleMaps: () => void;
+    selectDonor: (donorId: string) => void;
   }
 }
 
@@ -107,6 +108,14 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ donors, currentPosition, onDonorS
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
 
+    // Global function for donor selection (called from info window)
+    window.selectDonor = (donorId: string) => {
+      const donor = donors.find(d => d.id === donorId);
+      if (donor) {
+        onDonorSelect(donor);
+      }
+    };
+
     // Add donor markers
     donors.forEach(donor => {
       if (!donor.latitude || !donor.longitude) return;
@@ -167,14 +176,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ donors, currentPosition, onDonorS
 
       markersRef.current.push(marker);
     });
-
-    // Global function for donor selection (called from info window)
-    window.selectDonor = (donorId: string) => {
-      const donor = donors.find(d => d.id === donorId);
-      if (donor) {
-        onDonorSelect(donor);
-      }
-    };
 
   }, [donors, onDonorSelect]);
 

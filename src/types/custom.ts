@@ -20,6 +20,8 @@ export interface Donor {
   weight: number;
   city: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
   next_eligible_date: string;
   is_eligible: boolean;
   created_at?: string;
