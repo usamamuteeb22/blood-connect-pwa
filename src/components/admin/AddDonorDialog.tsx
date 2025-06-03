@@ -60,23 +60,24 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
         throw new Error("Please fill in all required fields");
       }
 
-      // Insert donor into database
+      // Insert donor into database with a placeholder user_id
       const { error } = await supabase
         .from('donors')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            age: parseInt(formData.age),
-            weight: parseInt(formData.weight),
-            blood_type: formData.blood_type,
-            city: formData.city,
-            address: formData.address,
-            is_eligible: formData.is_eligible,
-            next_eligible_date: new Date().toISOString(),
-          }
-        ]);
+        .insert({
+          user_id: '00000000-0000-0000-0000-000000000000', // Placeholder UUID for admin-created donors
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          age: parseInt(formData.age),
+          weight: parseInt(formData.weight),
+          blood_type: formData.blood_type,
+          city: formData.city,
+          address: formData.address,
+          is_eligible: formData.is_eligible,
+          next_eligible_date: new Date().toISOString(),
+          latitude: null,
+          longitude: null,
+        });
 
       if (error) throw error;
 
