@@ -36,12 +36,12 @@ const Index = () => {
     },
   ];
 
-  // const stats = [
-  //   { number: "100K+", label: "Registered Donors" },
-  //   { number: "50K+", label: "Lives Saved" },
-  //   { number: "500+", label: "Partner Hospitals" },
-  //   { number: "98%", label: "Request Success Rate" },
-  // ];
+  const stats = [
+    { number: "100K+", label: "Register Donors" },
+    { number: "50K+", label: "Lives Saved" },
+    { number: "500+", label: "Partner Hospitals" },
+    { number: "98%", label: "Request Success Rate" },
+  ];
 
   const handleFeatureClick = (link: string, state?: any) => {
     navigate(link, { state });
