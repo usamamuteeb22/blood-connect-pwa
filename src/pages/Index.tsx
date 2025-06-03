@@ -140,7 +140,7 @@ const Index = () => {
               </Link>
               <Button 
                 variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-blood px-8 py-6 text-lg"
+                className="bg-white text-blood hover:bg-gray-100 px-8 py-6 text-lg"
                 onClick={() => navigate('/donate', { state: { activeTab: 'request' } })}
               >
                 I Need Blood
