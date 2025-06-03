@@ -58,7 +58,7 @@ const RequestCard = ({ request }: RequestCardProps) => {
         <div className="flex justify-end">
           <Button 
             className="bg-blood hover:bg-blood-600"
-            onClick={() => navigate('/dashboard', { state: { activeTab: 'donors' } })}
+            onClick={() => navigate('/dashboard', { state: { activeTab: 'requests' } })}
           >
             I Want to Donate
           </Button>

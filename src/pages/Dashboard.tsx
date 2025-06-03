@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Import custom hooks
@@ -94,7 +93,6 @@ const Dashboard = () => {
         <main className="flex-grow bg-gray-50 flex items-center justify-center">
           <div>Loading...</div>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -128,7 +126,6 @@ const Dashboard = () => {
           </DashboardProvider>
         </div>
       </main>
-      <Footer />
       
       <DonorRegistrationDialog 
         open={showRegisterDialog}

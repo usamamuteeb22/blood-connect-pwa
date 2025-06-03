@@ -10,8 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type UserRole = "donor" | "recipient" | "hospital";
-
 const AuthForm = () => {
   const [searchParams] = useSearchParams();
   const defaultMode = searchParams.get("mode") === "signup" ? "signup" : "signin";
@@ -23,10 +21,10 @@ const AuthForm = () => {
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [bloodType, setBloodType] = useState("");
-  const [selectedRole, setSelectedRole] = useState<UserRole>("donor");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -84,9 +82,10 @@ const AuthForm = () => {
           name,
           phoneNumber,
           bloodType,
-          role: selectedRole
+          role: "user" // Default role since we removed the selection
         };
         await signUp(email, password, userData);
+        setShowVerificationMessage(true);
       }
     } catch (err: any) {
       setError(err.message || "An error occurred. Please try again.");
@@ -94,12 +93,6 @@ const AuthForm = () => {
       setIsLoading(false);
     }
   };
-  
-  const roleOptions: { value: UserRole; label: string }[] = [
-    { value: "donor", label: "Donor" },
-    { value: "recipient", label: "Recipient" },
-    { value: "hospital", label: "Hospital" },
-  ];
 
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   
@@ -120,6 +113,16 @@ const AuthForm = () => {
         <div className="px-6">
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {showVerificationMessage && (
+        <div className="px-6">
+          <Alert>
+            <AlertDescription>
+              Account created successfully! Please check your Gmail inbox and click the verification link to activate your account. Once verified, you can sign in and your account will be ready to use.
+            </AlertDescription>
           </Alert>
         </div>
       )}
@@ -242,26 +245,6 @@ const AuthForm = () => {
                 {fieldErrors.bloodType && (
                   <p className="text-sm text-destructive">{fieldErrors.bloodType}</p>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Register as</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {roleOptions.map((role) => (
-                    <Button
-                      key={role.value}
-                      type="button"
-                      variant={selectedRole === role.value ? "default" : "outline"}
-                      className={`${
-                        selectedRole === role.value 
-                          ? "bg-blood hover:bg-blood-600" 
-                          : "border-blood text-blood hover:bg-blood-50"
-                      }`}
-                      onClick={() => setSelectedRole(role.value)}
-                    >
-                      {role.label}
-                    </Button>
-                  ))}
-                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password" className={fieldErrors.password ? "text-destructive" : ""}>Password</Label>
