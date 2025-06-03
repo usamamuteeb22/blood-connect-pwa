@@ -12,6 +12,8 @@ import Request from "./pages/Request";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/AdminLogin";
+import AdminPanel from "./pages/AdminPanel";
 
 // Import components
 import PrivateRoute from "./components/auth/PrivateRoute";
@@ -30,6 +32,10 @@ function App() {
             <Route path="/donate" element={<Donate />} />
             <Route path="/donate/eligibility" element={<EligibilityForm />} />
             <Route path="/request" element={<Request />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminPanel />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={
