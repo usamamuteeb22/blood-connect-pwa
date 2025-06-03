@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,16 +34,6 @@ const Index = () => {
       link: "/about",
     },
   ];
-
-  // Ensure stats is properly defined and accessible
-  const stats = [
-    { number: "100K+", label: "Registered Donors" },
-    { number: "50K+", label: "Lives Saved" },
-    { number: "500+", label: "Partner Hospitals" },
-    { number: "98%", label: "Request Success Rate" },
-  ];
-
-  console.log("Stats defined:", stats); // Debug log
 
   const handleFeatureClick = (link: string, state?: any) => {
     navigate(link, { state });
@@ -114,20 +103,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Stats Section */}
-        <section className="py-16 px-4 bg-gray-50">
-          <div className="container mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {stats && stats.map((stat, index) => (
-                <div key={index} className="p-6">
-                  <p className="text-4xl font-bold text-blood mb-2">{stat.number}</p>
-                  <p className="text-gray-600">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* CTA Section */}
         <section className="py-16 px-4 blood-gradient text-white">
           <div className="container mx-auto text-center">
@@ -151,33 +126,7 @@ const Index = () => {
             </div>
           </div>
         </section>
-
-        {/* Testimonials (simplified) */}
-        <section className="py-16 px-4">
-          <div className="container mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Success Stories</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Real stories from donors and recipients who connected through OneDrop
-              </p>
-            </div>
-
-            <div className="max-w-4xl mx-auto p-6 border rounded-lg shadow-sm bg-white">
-              <p className="text-lg italic text-gray-600 mb-4">
-                "When my father needed an urgent blood transfusion, OneDrop connected us with a donor within 30 minutes. The platform literally saved his life. I'm forever grateful for this amazing service."
-              </p>
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-gray-300"></div>
-                <div className="ml-4">
-                  <p className="font-medium">Sarah Johnson</p>
-                  <p className="text-sm text-gray-500">Blood Recipient Family</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
-      <Footer />
     </div>
   );
 };

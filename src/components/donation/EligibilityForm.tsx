@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import EligibilityFormFields from "@/components/donation/EligibilityFormFields";
 import EligibilityNotice from "@/components/donation/EligibilityNotice";
 import EligibilityFormActions from "@/components/donation/EligibilityFormActions";
@@ -42,6 +42,7 @@ const EligibilityForm = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [existingDonor, setExistingDonor] = useState<boolean>(false);
   
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,6 +57,26 @@ const EligibilityForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  
+  // Check if user has already registered as a donor
+  useEffect(() => {
+    const checkExistingDonor = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('donors')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data && !error) {
+          setExistingDonor(true);
+          setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+        }
+      }
+    };
+    
+    checkExistingDonor();
+  }, [user]);
   
   const getCurrentLocation = () => {
     setLocationLoading(true);
@@ -168,6 +189,11 @@ const EligibilityForm = () => {
     setSubmitError("");
     setSuccessMessage("");
     
+    if (existingDonor) {
+      setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+      return;
+    }
+    
     if (!validateForm()) {
       setSubmitError("Please correct the highlighted errors to continue.");
       return;
@@ -217,14 +243,18 @@ const EligibilityForm = () => {
       
       if (error) throw error;
       
-      setSuccessMessage("You are now registered as a blood donor!");
+      setSuccessMessage("Congratulations! You have been successfully registered as a blood donor. Thank you for joining our life-saving community.");
       
       // Navigate to donate page after a short delay
       setTimeout(() => {
         navigate("/donate");
-      }, 2000);
+      }, 3000);
     } catch (error: any) {
-      setSubmitError(error.message || "There was an error registering you as a donor.");
+      if (error.code === '23505') {
+        setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+      } else {
+        setSubmitError(error.message || "There was an error registering you as a donor. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -327,13 +357,13 @@ const EligibilityForm = () => {
                 <EligibilityFormActions 
                   isLoading={isLoading}
                   onCancel={handleCancel}
+                  disabled={existingDonor}
                 />
               </CardFooter>
             </form>
           </Card>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

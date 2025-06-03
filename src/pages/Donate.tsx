@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import DonateHero from "@/components/donation/DonateHero";
@@ -143,7 +142,6 @@ const Donate = () => {
           onViewPastRequests={handleViewPastRequests}
         />
       </main>
-      <Footer />
     </div>
   );
 };

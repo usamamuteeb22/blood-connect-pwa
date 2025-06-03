@@ -1,12 +1,9 @@
 
 import React from "react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import AboutHero from "@/components/about/AboutHero";
 import OurMission from "@/components/about/OurMission";
-import ImpactStats from "@/components/about/ImpactStats";
-import TeamMembers from "@/components/about/TeamMembers";
-import { teamMembers } from "@/data/teamMembers";
+import KnowledgeSection from "@/components/about/KnowledgeSection";
 
 const About = () => {
   return (
@@ -15,10 +12,8 @@ const About = () => {
       <main className="flex-grow">
         <AboutHero />
         <OurMission />
-        <ImpactStats />
-        <TeamMembers members={teamMembers} />
+        <KnowledgeSection />
       </main>
-      <Footer />
     </div>
   );
 };

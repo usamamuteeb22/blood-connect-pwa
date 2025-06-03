@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -29,8 +29,8 @@ type RequestFormValues = z.infer<typeof requestFormSchema>;
 
 const RequestForm = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -47,6 +47,7 @@ const RequestForm = () => {
 
   const onSubmit = async (data: RequestFormValues) => {
     setIsSubmitting(true);
+    setSubmitStatus(null);
     
     try {
       // Create request in database
@@ -54,7 +55,7 @@ const RequestForm = () => {
         requester_id: user ? user.id : null,
         requester_name: data.contactName,
         blood_type: data.bloodType,
-        reason: data.reason, // This will work once we add the reason column
+        reason: data.reason,
         city: data.city,
         address: `${data.hospitalName}, ${data.address}`,
         contact: data.contactPhone,
@@ -63,17 +64,16 @@ const RequestForm = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Request Submitted",
-        description: "Your blood request has been submitted successfully.",
+      setSubmitStatus({
+        type: 'success',
+        message: 'Your blood request has been submitted successfully. We will notify you when donors respond.'
       });
 
       form.reset();
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "There was a problem submitting your request.",
+      setSubmitStatus({
+        type: 'error',
+        message: 'There was a problem submitting your request. Please try again.'
       });
       console.error("Error submitting request:", error);
     } finally {
@@ -84,6 +84,12 @@ const RequestForm = () => {
   return (
     <Card>
       <CardContent className="pt-6">
+        {submitStatus && (
+          <Alert variant={submitStatus.type === 'error' ? 'destructive' : 'default'} className="mb-6">
+            <AlertDescription>{submitStatus.message}</AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
