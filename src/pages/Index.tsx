@@ -36,12 +36,15 @@ const Index = () => {
     },
   ];
 
+  // Ensure stats is properly defined and accessible
   const stats = [
     { number: "100K+", label: "Register Donors" },
     { number: "50K+", label: "Lives Saved" },
     { number: "500+", label: "Partner Hospitals" },
     { number: "98%", label: "Request Success Rate" },
   ];
+
+  console.log("Stats defined:", stats); // Debug log
 
   const handleFeatureClick = (link: string, state?: any) => {
     navigate(link, { state });
@@ -115,7 +118,7 @@ const Index = () => {
         <section className="py-16 px-4 bg-gray-50">
           <div className="container mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {stats.map((stat, index) => (
+              {stats && stats.map((stat, index) => (
                 <div key={index} className="p-6">
                   <p className="text-4xl font-bold text-blood mb-2">{stat.number}</p>
                   <p className="text-gray-600">{stat.label}</p>
