@@ -43,6 +43,7 @@ const EligibilityForm = () => {
   const { user, isAuthenticated } = useAuth();
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [existingDonor, setExistingDonor] = useState<boolean>(false);
+  const [checkingExistingDonor, setCheckingExistingDonor] = useState<boolean>(true);
   
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,22 +62,34 @@ const EligibilityForm = () => {
   // Check if user has already registered as a donor
   useEffect(() => {
     const checkExistingDonor = async () => {
-      if (user?.id) {
+      if (!user?.id || !isAuthenticated) {
+        setCheckingExistingDonor(false);
+        return;
+      }
+
+      try {
         const { data, error } = await supabase
           .from('donors')
-          .select('id')
+          .select('id, name, email')
           .eq('user_id', user.id)
           .single();
         
         if (data && !error) {
           setExistingDonor(true);
           setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+        } else if (error && error.code !== 'PGRST116') {
+          // PGRST116 is "not found" error, which is expected if user hasn't registered
+          console.error('Error checking existing donor:', error);
         }
+      } catch (error) {
+        console.error('Error checking existing donor:', error);
+      } finally {
+        setCheckingExistingDonor(false);
       }
     };
     
     checkExistingDonor();
-  }, [user]);
+  }, [user, isAuthenticated]);
   
   const getCurrentLocation = () => {
     setLocationLoading(true);
@@ -189,6 +202,11 @@ const EligibilityForm = () => {
     setSubmitError("");
     setSuccessMessage("");
     
+    if (!isAuthenticated) {
+      setSubmitError("Please sign in to register as a donor.");
+      return;
+    }
+    
     if (existingDonor) {
       setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
       return;
@@ -219,12 +237,25 @@ const EligibilityForm = () => {
     setIsLoading(true);
     
     try {
+      // Double-check if user already exists before inserting
+      const { data: existingData } = await supabase
+        .from('donors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (existingData) {
+        setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+        setExistingDonor(true);
+        return;
+      }
+      
       // Register user as donor in Supabase with accurate location data
       const { error } = await supabase
         .from('donors')
         .insert([
           { 
-            user_id: user?.id || null,
+            user_id: user.id,
             name, 
             email, 
             phone, 
@@ -241,20 +272,25 @@ const EligibilityForm = () => {
           }
         ]);
       
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+          setExistingDonor(true);
+        } else {
+          throw error;
+        }
+        return;
+      }
       
       setSuccessMessage("Congratulations! You have been successfully registered as a blood donor. Thank you for joining our life-saving community.");
+      setExistingDonor(true);
       
       // Navigate to donate page after a short delay
       setTimeout(() => {
         navigate("/donate");
       }, 3000);
     } catch (error: any) {
-      if (error.code === '23505') {
-        setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
-      } else {
-        setSubmitError(error.message || "There was an error registering you as a donor. Please try again.");
-      }
+      setSubmitError(error.message || "There was an error registering you as a donor. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -263,6 +299,26 @@ const EligibilityForm = () => {
   const handleCancel = () => {
     navigate("/donate");
   };
+  
+  // Show loading state while checking for existing donor
+  if (checkingExistingDonor) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-grow bg-gray-50 py-16 px-4">
+          <div className="container mx-auto max-w-2xl">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p>Checking your donor registration status...</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
   
   return (
     <div className="flex flex-col min-h-screen">
@@ -273,7 +329,10 @@ const EligibilityForm = () => {
             <CardHeader>
               <CardTitle className="text-2xl text-center">Blood Donor Eligibility Form</CardTitle>
               <CardDescription className="text-center">
-                Complete this form to register as a blood donor and check your eligibility
+                {existingDonor 
+                  ? "You have already registered as a donor"
+                  : "Complete this form to register as a blood donor and check your eligibility"
+                }
               </CardDescription>
             </CardHeader>
             
@@ -293,7 +352,7 @@ const EligibilityForm = () => {
               </div>
             )}
             
-            {!currentPosition && (
+            {!existingDonor && !currentPosition && (
               <div className="px-6">
                 <Alert>
                   <AlertDescription className="flex items-center justify-between">
@@ -318,7 +377,7 @@ const EligibilityForm = () => {
               </div>
             )}
             
-            {currentPosition && (
+            {!existingDonor && currentPosition && (
               <div className="px-6">
                 <Alert>
                   <AlertDescription>
@@ -329,38 +388,53 @@ const EligibilityForm = () => {
               </div>
             )}
             
-            <form onSubmit={handleSubmit}>
+            {existingDonor ? (
               <CardContent className="space-y-6">
-                <EligibilityFormFields
-                  name={name}
-                  setName={setName}
-                  email={email}
-                  setEmail={setEmail}
-                  phone={phone}
-                  setPhone={setPhone}
-                  bloodGroup={bloodGroup}
-                  setBloodGroup={setBloodGroup}
-                  age={age}
-                  setAge={setAge}
-                  weight={weight}
-                  setWeight={setWeight}
-                  city={city}
-                  setCity={setCity}
-                  address={address}
-                  setAddress={setAddress}
-                  errors={errors}
-                />
-                
-                <EligibilityNotice />
+                <div className="text-center py-8">
+                  <p className="text-lg mb-4">Thank you for being a registered donor!</p>
+                  <p className="text-gray-600 mb-6">You can manage your donor profile and view requests in your dashboard.</p>
+                  <Button 
+                    onClick={() => navigate("/dashboard")}
+                    className="bg-blood hover:bg-blood-600"
+                  >
+                    Go to Dashboard
+                  </Button>
+                </div>
               </CardContent>
-              <CardFooter>
-                <EligibilityFormActions 
-                  isLoading={isLoading}
-                  onCancel={handleCancel}
-                  disabled={existingDonor}
-                />
-              </CardFooter>
-            </form>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-6">
+                  <EligibilityFormFields
+                    name={name}
+                    setName={setName}
+                    email={email}
+                    setEmail={setEmail}
+                    phone={phone}
+                    setPhone={setPhone}
+                    bloodGroup={bloodGroup}
+                    setBloodGroup={setBloodGroup}
+                    age={age}
+                    setAge={setAge}
+                    weight={weight}
+                    setWeight={setWeight}
+                    city={city}
+                    setCity={setCity}
+                    address={address}
+                    setAddress={setAddress}
+                    errors={errors}
+                  />
+                  
+                  <EligibilityNotice />
+                </CardContent>
+                <CardFooter>
+                  <EligibilityFormActions 
+                    isLoading={isLoading}
+                    onCancel={handleCancel}
+                    disabled={existingDonor}
+                  />
+                </CardFooter>
+              </form>
+            )}
           </Card>
         </div>
       </main>

@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import RequestHeader from "@/components/request/RequestHeader";
 import RequestList from "@/components/request/RequestList";
 import RequestCallToAction from "@/components/request/RequestCallToAction";
@@ -15,7 +14,6 @@ const Request = () => {
         <RequestList />
         <RequestCallToAction />
       </main>
-      <Footer />
     </div>
   );
 };
