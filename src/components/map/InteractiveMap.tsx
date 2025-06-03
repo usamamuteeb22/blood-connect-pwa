@@ -17,8 +17,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     <div className="w-full h-96 rounded-lg overflow-hidden border">
       <MapLibreMap 
         donors={donors}
-        center={center}
-        zoom={zoom}
+        currentPosition={center ? { lat: center[1], lng: center[0] } : null}
+        onDonorSelect={(donor) => console.log('Donor selected:', donor)}
       />
     </div>
   );

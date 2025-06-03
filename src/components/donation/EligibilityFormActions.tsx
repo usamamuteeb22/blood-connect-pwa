@@ -6,9 +6,10 @@ import { useNavigate } from "react-router-dom";
 interface EligibilityFormActionsProps {
   isLoading: boolean;
   onCancel: () => void;
+  disabled?: boolean;
 }
 
-const EligibilityFormActions = ({ isLoading, onCancel }: EligibilityFormActionsProps) => {
+const EligibilityFormActions = ({ isLoading, onCancel, disabled = false }: EligibilityFormActionsProps) => {
   return (
     <div className="w-full flex flex-col sm:flex-row gap-4">
       <Button 
@@ -16,13 +17,14 @@ const EligibilityFormActions = ({ isLoading, onCancel }: EligibilityFormActionsP
         variant="outline"
         className="flex-1" 
         onClick={onCancel}
+        disabled={disabled}
       >
         Cancel
       </Button>
       <Button 
         type="submit" 
         className="flex-1 bg-blood hover:bg-blood-600"
-        disabled={isLoading}
+        disabled={isLoading || disabled}
       >
         {isLoading ? "Submitting..." : "Submit & Register as Donor"}
       </Button>
