@@ -60,16 +60,69 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
         throw new Error("Please fill in all required fields");
       }
 
-      // Insert donor into database with a placeholder user_id
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        throw new Error("Please enter a valid email address");
+      }
+
+      // Validate age and weight
+      const age = parseInt(formData.age);
+      const weight = parseInt(formData.weight);
+      
+      if (age < 18 || age > 65) {
+        throw new Error("Age must be between 18 and 65");
+      }
+      
+      if (weight < 50) {
+        throw new Error("Weight must be at least 50kg");
+      }
+
+      // Create a user account for this donor first
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: formData.email,
+        password: 'TempPassword123!', // Temporary password - user should reset
+        email_confirm: true,
+        user_metadata: {
+          full_name: formData.name,
+          phone: formData.phone,
+          blood_type: formData.blood_type,
+          role: 'user'
+        }
+      });
+
+      if (authError) {
+        // If user already exists, try to find them
+        if (authError.message.includes('already registered')) {
+          const { data: existingUsers, error: fetchError } = await supabase
+            .from('auth.users')
+            .select('id')
+            .eq('email', formData.email)
+            .single();
+            
+          if (fetchError) {
+            throw new Error(`User with email ${formData.email} already exists. Please use a different email or update the existing user.`);
+          }
+        } else {
+          throw authError;
+        }
+      }
+
+      const userId = authData?.user?.id;
+      if (!userId) {
+        throw new Error("Failed to create user account");
+      }
+
+      // Insert donor into database with the actual user ID
       const { error } = await supabase
         .from('donors')
         .insert({
-          user_id: '00000000-0000-0000-0000-000000000000', // Placeholder UUID for admin-created donors
+          user_id: userId,
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          age: parseInt(formData.age),
-          weight: parseInt(formData.weight),
+          age: age,
+          weight: weight,
           blood_type: formData.blood_type,
           city: formData.city,
           address: formData.address,
@@ -83,7 +136,7 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
 
       toast({
         title: "Success!",
-        description: "Donor has been added successfully.",
+        description: "Donor has been added successfully. They can log in with their email and password 'TempPassword123!' (they should change this).",
       });
 
       resetForm();

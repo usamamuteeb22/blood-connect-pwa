@@ -17,6 +17,7 @@ import AdminPanel from "./pages/AdminPanel";
 
 // Import components
 import PrivateRoute from "./components/auth/PrivateRoute";
+import AdminRoute from "./components/auth/AdminRoute";
 import EligibilityForm from "./components/donation/EligibilityForm";
 
 function App() {
@@ -35,7 +36,11 @@ function App() {
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            } />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={

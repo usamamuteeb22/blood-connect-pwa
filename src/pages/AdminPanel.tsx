@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth as useCustomAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,26 +28,27 @@ interface Donor {
 }
 
 const AdminPanel = () => {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, loading } = useCustomAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [donors, setDonors] = useState<Donor[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<Donor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [donorsLoading, setDonorsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [bloodTypeFilter, setBloodTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
-    // Check if user is admin
-    if (!user || user.user_metadata?.role !== 'admin') {
+    if (!loading && (!user || !isAdmin)) {
       navigate('/admin/login');
       return;
     }
     
-    fetchDonors();
-  }, [user, navigate]);
+    if (user && isAdmin) {
+      fetchDonors();
+    }
+  }, [user, isAdmin, loading, navigate]);
 
   useEffect(() => {
     filterDonors();
@@ -70,7 +71,7 @@ const AdminPanel = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setDonorsLoading(false);
     }
   };
 
@@ -104,11 +105,11 @@ const AdminPanel = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    await supabase.auth.signOut();
     navigate('/admin/login');
   };
 
-  if (loading) {
+  if (loading || donorsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div>Loading...</div>

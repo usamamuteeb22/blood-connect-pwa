@@ -30,14 +30,20 @@ const AdminLogin = () => {
 
       if (error) throw error;
 
-      // Check if user has admin role
-      if (data.user?.user_metadata?.role === 'admin') {
+      // Check if user has admin role using the new role system
+      const { data: isAdmin, error: roleError } = await supabase
+        .rpc('is_admin', { _user_id: data.user.id });
+
+      if (roleError) throw roleError;
+
+      if (isAdmin) {
         toast({
           title: "Welcome Admin!",
           description: "You have successfully logged in to the admin panel.",
         });
         navigate("/admin");
       } else {
+        await supabase.auth.signOut();
         throw new Error("Access denied. Admin privileges required.");
       }
     } catch (err: any) {
