@@ -15,7 +15,9 @@ export function useAuth() {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await checkAdminStatus(session.user.id);
+        // Simple admin check based on email since we removed the role system
+        const isAdminUser = session.user.email === 'usamaweb246@gmail.com';
+        setIsAdmin(isAdminUser);
       }
       setLoading(false);
     };
@@ -28,7 +30,9 @@ export function useAuth() {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          await checkAdminStatus(session.user.id);
+          // Simple admin check based on email since we removed the role system
+          const isAdminUser = session.user.email === 'usamaweb246@gmail.com';
+          setIsAdmin(isAdminUser);
         } else {
           setIsAdmin(false);
         }
@@ -38,20 +42,6 @@ export function useAuth() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const checkAdminStatus = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .rpc('is_admin', { _user_id: userId });
-      
-      if (!error) {
-        setIsAdmin(data || false);
-      }
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-      setIsAdmin(false);
-    }
-  };
 
   return {
     user,

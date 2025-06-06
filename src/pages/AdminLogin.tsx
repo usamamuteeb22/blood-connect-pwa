@@ -30,11 +30,8 @@ const AdminLogin = () => {
 
       if (error) throw error;
 
-      // Check if user has admin role using the new role system
-      const { data: isAdmin, error: roleError } = await supabase
-        .rpc('is_admin', { _user_id: data.user.id });
-
-      if (roleError) throw roleError;
+      // Simple admin check based on email since we removed the role system
+      const isAdmin = data.user.email === 'usamaweb246@gmail.com';
 
       if (isAdmin) {
         toast({
