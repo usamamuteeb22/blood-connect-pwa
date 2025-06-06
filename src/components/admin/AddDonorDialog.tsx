@@ -92,32 +92,21 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
       });
 
       if (authError) {
-        // If user already exists, try to find them
+        // If user already exists, we'll just create the donor record without a user_id
         if (authError.message.includes('already registered')) {
-          const { data: existingUsers, error: fetchError } = await supabase
-            .from('auth.users')
-            .select('id')
-            .eq('email', formData.email)
-            .single();
-            
-          if (fetchError) {
-            throw new Error(`User with email ${formData.email} already exists. Please use a different email or update the existing user.`);
-          }
+          console.log('User already exists, creating donor record only');
         } else {
           throw authError;
         }
       }
 
-      const userId = authData?.user?.id;
-      if (!userId) {
-        throw new Error("Failed to create user account");
-      }
+      const userId = authData?.user?.id || null;
 
-      // Insert donor into database with the actual user ID
+      // Insert donor into database
       const { error } = await supabase
         .from('donors')
         .insert({
-          user_id: userId,
+          user_id: userId, // This might be null if user creation failed
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
@@ -136,7 +125,9 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
 
       toast({
         title: "Success!",
-        description: "Donor has been added successfully. They can log in with their email and password 'TempPassword123!' (they should change this).",
+        description: userId 
+          ? "Donor has been added successfully. They can log in with their email and password 'TempPassword123!' (they should change this)."
+          : "Donor has been added successfully to the database.",
       });
 
       resetForm();
