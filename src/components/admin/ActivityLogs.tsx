@@ -20,12 +20,12 @@ const ActivityLogs = () => {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        // Bypass generated types since activity_logs is not inferred in types
-        const { data, error } = await (supabase
+        // Use 'as any' on supabase to bypass type-checking for this unknown table
+        const { data, error } = await (supabase as any)
           .from('activity_logs')
           .select('*')
           .order('timestamp', { ascending: false })
-          .limit(50) as any);
+          .limit(50);
 
         if (error) throw error;
 
