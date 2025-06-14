@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import DonorsTable from "@/components/admin/DonorsTable";
 import AddDonorDialog from "@/components/admin/AddDonorDialog";
 
@@ -29,7 +28,6 @@ interface Donor {
 const AdminPanel = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [donors, setDonors] = useState<Donor[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<Donor[]>([]);
   const [donorsLoading, setDonorsLoading] = useState(true);

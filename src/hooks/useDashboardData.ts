@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Donor, BloodRequest, Donation } from "@/types/custom";
-import { toast } from "@/components/ui/use-toast";
 
 // Helper function to fetch donor profile
 const fetchDonorProfile = async (userId: string) => {
@@ -136,11 +135,6 @@ export const useDashboardData = () => {
         setUserRequests(requests);
       } catch (error: any) {
         console.error("Error loading dashboard data:", error.message);
-        toast({
-          title: "Error",
-          description: "Failed to load dashboard data. Please try again.",
-          variant: "destructive",
-        });
       } finally {
         setLoading(false);
       }

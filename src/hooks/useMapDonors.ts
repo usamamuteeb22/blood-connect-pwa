@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Donor } from '@/types/custom';
-import { toast } from '@/components/ui/use-toast';
 import { calculateDistance, isValidCoordinate } from '@/utils/mapUtils';
 
 interface UseMapDonorsProps {
@@ -93,11 +92,6 @@ export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter, city 
     } catch (err: any) {
       console.error('Error fetching donors:', err);
       setError(err.message || 'Failed to fetch donors');
-      toast({
-        title: "Error",
-        description: "Failed to load nearby donors. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
