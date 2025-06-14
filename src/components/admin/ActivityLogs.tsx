@@ -20,9 +20,9 @@ const ActivityLogs = () => {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        // Use any for the type (activity_logs is not in Database type)
+        // Remove generic argument. Use .from('activity_logs')
         const { data, error } = await supabase
-          .from<any>('activity_logs')
+          .from('activity_logs')
           .select('*')
           .order('timestamp', { ascending: false })
           .limit(50);
@@ -82,3 +82,4 @@ const ActivityLogs = () => {
 };
 
 export default ActivityLogs;
+

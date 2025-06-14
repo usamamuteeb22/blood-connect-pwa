@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -7,20 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-
-interface Donor {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  blood_type: string;
-  age: number;
-  weight: number;
-  city: string;
-  address: string;
-  created_at: string;
-  is_eligible: boolean;
-}
+import type { Donor } from "@/types/custom"; // Force usage from central types
 
 interface DonorsTableProps {
   donors: Donor[];
@@ -45,6 +33,8 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
     const aValue = a[sortField];
     const bValue = b[sortField];
     
+    if (aValue === undefined) return 1;
+    if (bValue === undefined) return -1;
     if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     return 0;
@@ -146,7 +136,11 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
                 {donor.address}
               </TableCell>
               <TableCell>
-                {format(new Date(donor.created_at), 'MMM dd, yyyy')}
+                {/* created_at is optional! */}
+                {donor.created_at ? 
+                  format(new Date(donor.created_at), 'MMM dd, yyyy') : 
+                  <span>-</span>
+                }
               </TableCell>
               <TableCell>
                 <Badge 
@@ -195,3 +189,4 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
 };
 
 export default DonorsTable;
+
