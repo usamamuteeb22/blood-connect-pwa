@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ import AddDonorDialog from "@/components/admin/AddDonorDialog";
 import ActivityLogs from "./ActivityLogs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // types
 import type { Donor } from "@/types/custom";
@@ -25,6 +27,7 @@ const AdminPanelLayout = () => {
   const [searchQuery, setSearchQuery] = useState({ field: "", value: "" });
   const [locationQuery, setLocationQuery] = useState({ city: "", address: "" });
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [exportAllLoading, setExportAllLoading] = useState(false);
 
   // Fetch donors
   const fetchDonors = async () => {
@@ -42,6 +45,30 @@ const AdminPanelLayout = () => {
     } finally {
       setDonorsLoading(false);
     }
+  };
+
+  // Export all donations as Excel
+  const handleExportAllDonations = async () => {
+    setExportAllLoading(true);
+    toast.info("Fetching all donations for export...");
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*')
+        .order('date', { ascending: false });
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        toast.warning("No donations to export.");
+      } else {
+        const mod = await import('@/utils/exportUtils');
+        await mod.exportToExcel(data, 'all-donations');
+        toast.success("Exported all donations as Excel!");
+      }
+    } catch (err) {
+      toast.error("Failed to export all donations.");
+      console.error(err);
+    }
+    setExportAllLoading(false);
   };
 
   useEffect(() => {
@@ -125,12 +152,21 @@ const AdminPanelLayout = () => {
                 <h2 className="text-lg font-semibold">Donors Management</h2>
                 <span className="text-sm text-gray-600">Search and manage all registered donors.</span>
               </div>
-              <Button 
-                onClick={() => setShowAddDialog(true)}
-                className="bg-blood hover:bg-blood-600 flex items-center gap-2"
-              >
-                + Add Donor
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => setShowAddDialog(true)}
+                  className="bg-blood hover:bg-blood-600 flex items-center gap-2"
+                >
+                  + Add Donor
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleExportAllDonations}
+                  disabled={exportAllLoading}
+                >
+                  {exportAllLoading ? "Exporting..." : "Export ALL Donations (Excel)"}
+                </Button>
+              </div>
             </div>
 
             {/* Advanced Search Filters */}

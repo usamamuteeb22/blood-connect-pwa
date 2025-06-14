@@ -7,12 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Donor } from "@/types/custom";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const DonorProfilePage = () => {
   const { id } = useParams();
   const [donor, setDonor] = useState<Donor | null>(null);
   const [donations, setDonations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addLoading, setAddLoading] = useState(false);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -43,6 +45,7 @@ const DonorProfilePage = () => {
   // Add new donation (with current date)
   const handleAddDonation = async () => {
     if (!donor) return;
+    setAddLoading(true);
     try {
       const date = new Date().toISOString();
       const { error } = await supabase
@@ -56,11 +59,16 @@ const DonorProfilePage = () => {
           date: date,
           status: 'completed'
         }]);
-      if (error) throw error;
+      if (error) {
+        toast.error("Error adding donation");
+        throw error;
+      }
+      toast.success("Donation added!");
       fetchProfile(); // Refresh
     } catch (e) {
-      alert("Error adding donation");
+      toast.error("Error adding donation");
     }
+    setAddLoading(false);
   };
 
   if (loading) return <div>Loading profile...</div>;
@@ -76,8 +84,23 @@ const DonorProfilePage = () => {
         <div className="text-sm">Address: {donor.address}</div>
         <div className="text-sm">Blood Group: {donor.blood_type}</div>
         <div className="flex gap-2 mt-2">
-          <Button onClick={handleAddDonation} className="bg-blood text-white">Add Donation</Button>
-          <Button variant="outline" onClick={() => import('@/utils/exportUtils').then(m => m.exportToCSV(donations, `donor-${donor.id}-donations`))}>Export Donations (CSV)</Button>
+          <Button
+            onClick={handleAddDonation}
+            className="bg-blood text-white"
+            disabled={addLoading}
+          >
+            {addLoading ? "Adding..." : "Add Donation"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              import('@/utils/exportUtils').then(m =>
+                m.exportToCSV(donations, `donor-${donor.id}-donations`)
+              )
+            }
+          >
+            Export Donations (CSV)
+          </Button>
         </div>
       </Card>
       <Card>
