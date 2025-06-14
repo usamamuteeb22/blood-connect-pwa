@@ -6,6 +6,7 @@ import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 interface Donor {
   id: string;
@@ -24,9 +25,10 @@ interface Donor {
 interface DonorsTableProps {
   donors: Donor[];
   onRefresh: () => void;
+  clickableRows?: boolean;
 }
 
-const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
+const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { clickableRows?: boolean }) => {
   const [sortField, setSortField] = useState<keyof Donor>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -96,6 +98,8 @@ const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
     </TableHead>
   );
 
+  const navigate = useNavigate();
+
   if (donors.length === 0) {
     return (
       <div className="text-center py-10">
@@ -105,7 +109,7 @@ const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -123,7 +127,11 @@ const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
         </TableHeader>
         <TableBody>
           {sortedDonors.map((donor) => (
-            <TableRow key={donor.id}>
+            <TableRow
+              key={donor.id}
+              className={clickableRows ? "cursor-pointer hover:bg-blue-50" : ""}
+              onClick={clickableRows ? () => navigate(`/admin/donor/${donor.id}`) : undefined}
+            >
               <TableCell className="font-medium">{donor.name}</TableCell>
               <TableCell>{donor.email}</TableCell>
               <TableCell>{donor.age}</TableCell>
@@ -157,13 +165,19 @@ const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem 
-                      onClick={() => handleToggleStatus(donor.id, donor.is_eligible)}
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleToggleStatus(donor.id, donor.is_eligible);
+                      }}
                     >
                       <Edit className="mr-2 h-4 w-4" />
-                      {donor.is_eligible ? 'Deactivate' : 'Activate'}
+                      {donor.is_eligible ? 'Inactive' : 'Activate'}
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                      onClick={() => handleDelete(donor.id)}
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDelete(donor.id);
+                      }}
                       className="text-red-600"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
