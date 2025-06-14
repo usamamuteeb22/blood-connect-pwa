@@ -20,14 +20,25 @@ const ActivityLogs = () => {
     const fetchLogs = async () => {
       setLoading(true);
       try {
+        // Use any for the type (activity_logs is not in Database type)
         const { data, error } = await supabase
-          .from('activity_logs')
+          .from<any>('activity_logs')
           .select('*')
           .order('timestamp', { ascending: false })
           .limit(50);
 
         if (error) throw error;
-        setLogs(data || []);
+        setLogs(
+          (data || [])
+            .filter((row: any) => row.id && row.action && row.details && row.timestamp && row.admin)
+            .map((row: any) => ({
+              id: row.id,
+              action: row.action,
+              details: row.details,
+              timestamp: row.timestamp,
+              admin: row.admin,
+            }))
+        );
       } catch (e) {
         console.error(e);
       }
