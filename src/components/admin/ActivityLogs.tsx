@@ -20,14 +20,15 @@ const ActivityLogs = () => {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        // Remove generic argument. Use .from('activity_logs')
-        const { data, error } = await supabase
+        // Bypass generated types since activity_logs is not inferred in types
+        const { data, error } = await (supabase
           .from('activity_logs')
           .select('*')
           .order('timestamp', { ascending: false })
-          .limit(50);
+          .limit(50) as any);
 
         if (error) throw error;
+
         setLogs(
           (data || [])
             .filter((row: any) => row.id && row.action && row.details && row.timestamp && row.admin)
@@ -82,4 +83,3 @@ const ActivityLogs = () => {
 };
 
 export default ActivityLogs;
-
