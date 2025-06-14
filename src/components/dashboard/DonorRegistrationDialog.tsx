@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -80,11 +79,6 @@ const DonorRegistrationDialog = ({ open, onOpenChange }: DonorRegistrationDialog
       onOpenChange(false);
     } catch (error: any) {
       setError(error.message || "Failed to register as donor.");
-      toast({
-        title: "Registration Failed",
-        description: error.message || "Failed to register as donor.",
-        variant: "destructive",
-      });
     } finally {
       setIsRegistering(false);
     }

@@ -64,11 +64,6 @@ const AdminPanel = () => {
       setDonors(data || []);
     } catch (error) {
       console.error('Error fetching donors:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch donors",
-        variant: "destructive",
-      });
     } finally {
       setDonorsLoading(false);
     }

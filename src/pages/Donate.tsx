@@ -1,7 +1,7 @@
+
 import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import DonateHero from "@/components/donation/DonateHero";
 import DonationTabs from "@/components/donation/DonationTabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 const Donate = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("donate");
   

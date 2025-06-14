@@ -1,13 +1,10 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Donor } from "@/types/custom";
 
 export const useDashboardActions = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
   const [showDonorDialog, setShowDonorDialog] = useState(false);
   const [showRegisterDialog, setShowRegisterDialog] = useState(false);
@@ -42,21 +39,12 @@ export const useDashboardActions = () => {
       
       if (error) throw error;
       
-      toast({
-        title: "Request Sent",
-        description: `Your blood request has been sent to ${selectedDonor.name}.`,
-      });
-      
       setShowDonorDialog(false);
       
       // Return true to indicate success (for refreshing data)
       return true;
     } catch (error: any) {
-      toast({
-        title: "Request Failed",
-        description: error.message || "Failed to send blood request.",
-        variant: "destructive",
-      });
+      console.error("Request Failed", error.message || "Failed to send blood request.");
       return false;
     }
   };
@@ -118,22 +106,13 @@ export const useDashboardActions = () => {
           
         if (donorUpdateError) throw donorUpdateError;
         
-        toast({
-          title: "Request Approved",
-          description: "You have approved the blood donation request. Thank you for saving a life!",
-        });
-        
         return {
           success: true,
           newEligibleDate
         };
       }
     } catch (error: any) {
-      toast({
-        title: "Action Failed",
-        description: error.message || "Failed to approve blood request.",
-        variant: "destructive",
-      });
+      console.error("Action Failed", error.message || "Failed to approve blood request.");
     }
     
     return { success: false };
@@ -149,18 +128,9 @@ export const useDashboardActions = () => {
         
       if (error) throw error;
       
-      toast({
-        title: "Request Rejected",
-        description: "You have rejected the blood donation request.",
-      });
-      
       return true;
     } catch (error: any) {
-      toast({
-        title: "Action Failed",
-        description: error.message || "Failed to reject blood request.",
-        variant: "destructive",
-      });
+      console.error("Action Failed", error.message || "Failed to reject blood request.");
       return false;
     }
   };

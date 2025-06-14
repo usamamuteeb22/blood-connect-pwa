@@ -1,9 +1,7 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 
 const ADMIN_EMAIL = 'usamaweb246@gmail.com';
 
@@ -26,7 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -73,22 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const isAdminUser = data.user.email === ADMIN_EMAIL;
 
-      toast({
-        title: isAdminUser ? "Welcome Admin!" : "Welcome back!",
-        description: "You have successfully signed in.",
-      });
-
       if (isAdminUser) {
         navigate("/admin");
       } else {
         navigate("/dashboard");
       }
     } catch (error: any) {
-      toast({
-        title: "Authentication failed",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      console.error("Authentication failed", error.message || "Please check your credentials and try again.");
     }
   };
 
@@ -111,34 +99,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       
-      toast({
-        title: "Account created!",
-        description: "Your account has been created successfully. Please check your email for verification.",
-      });
       navigate("/auth");
     } catch (error: any) {
-      toast({
-        title: "Registration failed",
-        description: error.message || "There was a problem creating your account.",
-        variant: "destructive",
-      });
+      console.error("Registration failed", error.message || "There was a problem creating your account.");
     }
   };
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out.",
-      });
       navigate("/");
     } catch (error: any) {
-      toast({
-        title: "Sign out failed",
-        description: error.message || "There was a problem signing you out.",
-        variant: "destructive",
-      });
+      console.error("Sign out failed", error.message || "There was a problem signing you out.");
     }
   };
 

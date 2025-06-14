@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 interface Donor {
@@ -29,7 +27,6 @@ interface DonorsTableProps {
 }
 
 const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
-  const { toast } = useToast();
   const [sortField, setSortField] = useState<keyof Donor>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -60,18 +57,9 @@ const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: `Donor status updated successfully`,
-      });
       onRefresh();
     } catch (error) {
       console.error('Error updating donor status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update donor status",
-        variant: "destructive",
-      });
     }
   };
 
@@ -86,18 +74,9 @@ const DonorsTable = ({ donors, onRefresh }: DonorsTableProps) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Donor deleted successfully",
-      });
       onRefresh();
     } catch (error) {
       console.error('Error deleting donor:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete donor",
-        variant: "destructive",
-      });
     }
   };
 
