@@ -1,3 +1,7 @@
+
+// SECURITY: Do NOT store any sensitive admin secrets in this file.
+// WARNING: Current admin check only compares email (usamaweb246@gmail.com). 
+// For real security, implement a robust admin role in Supabase and use claims-based verification!
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
