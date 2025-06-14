@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from "./contexts/AuthContext";
 import { LocationProvider } from "./contexts/LocationContext";
@@ -13,6 +14,8 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPanel from "./pages/AdminPanel";
+// Import DonorProfilePage for admin donor profile views
+import DonorProfilePage from "./pages/admin/DonorProfilePage";
 
 // Import components
 import PrivateRoute from "./components/auth/PrivateRoute";
@@ -32,27 +35,45 @@ function App() {
             <Route path="/donate" element={<Donate />} />
             <Route path="/donate/eligibility" element={<EligibilityForm />} />
             <Route path="/request" element={<Request />} />
-            
+
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminPanel />
-              </AdminRoute>
-            } />
-            
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminPanel />
+                </AdminRoute>
+              }
+            />
+            {/* Donor profile page inside admin area */}
+            <Route
+              path="/admin/donor/:id"
+              element={
+                <AdminRoute>
+                  <DonorProfilePage />
+                </AdminRoute>
+              }
+            />
+
             {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } />
-            <Route path="/profile" element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            } />
-            
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
+
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -63,3 +84,4 @@ function App() {
 }
 
 export default App;
+
