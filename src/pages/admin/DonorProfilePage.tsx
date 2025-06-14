@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +43,15 @@ const DonorProfilePage = () => {
     fetchProfile();
   }, [id]);
 
+  // Helper: robust back navigation (go back if possible, else go to /admin)
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/admin');
+    }
+  };
+
   // Add new donation (with current date and time)
   const handleAddDonation = async () => {
     if (!donor) return;
@@ -83,7 +91,7 @@ const DonorProfilePage = () => {
   return (
     <div className="container max-w-2xl mx-auto py-8">
       <div className="mb-4">
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="outline" onClick={handleBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
@@ -149,4 +157,3 @@ const DonorProfilePage = () => {
 };
 
 export default DonorProfilePage;
-
