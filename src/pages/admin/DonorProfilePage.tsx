@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,17 +41,19 @@ const DonorProfilePage = () => {
     fetchProfile();
   }, [id]);
 
-  // Add new donation (with current date)
+  // Add new donation (with current date and time)
   const handleAddDonation = async () => {
     if (!donor) return;
     setAddLoading(true);
     try {
       const date = new Date().toISOString();
+
+      // Insert a new donation using all required fields from the Donation interface
       const { error } = await supabase
         .from('donations')
         .insert([{
           donor_id: donor.id,
-          request_id: null,
+          request_id: null, // Most manual entries will not be tied to a blood request
           recipient_name: 'Manual Entry',
           blood_type: donor.blood_type,
           city: donor.city,
@@ -60,13 +61,15 @@ const DonorProfilePage = () => {
           status: 'completed'
         }]);
       if (error) {
-        toast.error("Error adding donation");
-        throw error;
+        toast.error("Error adding donation. Please try again.");
+      } else {
+        toast.success("Donation added successfully!");
+        // Refresh the profile and donation list
+        fetchProfile();
       }
-      toast.success("Donation added!");
-      fetchProfile(); // Refresh
     } catch (e) {
-      toast.error("Error adding donation");
+      toast.error("Error adding donation. Please try again.");
+      console.error(e);
     }
     setAddLoading(false);
   };
