@@ -1,6 +1,4 @@
-
 import { useState, useEffect } from "react";
-import Navbar from "@/components/layout/Navbar";
 import { useNavigate, useLocation } from "react-router-dom";
 import DonateHero from "@/components/donation/DonateHero";
 import DonationTabs from "@/components/donation/DonationTabs";
@@ -72,7 +70,7 @@ const Donate = () => {
   
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      {/* Navbar is now globally rendered in App */}
       <main className="flex-grow">
         {/* Hero Section */}
         <DonateHero onCheckEligibility={handleCheckEligibility} />
