@@ -1,13 +1,13 @@
 
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AdminRouteProps {
   children: React.ReactNode;
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading } = useAuth();
   
   if (loading) {
     return (
@@ -17,12 +17,13 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
   
-  if (!user) {
+  if (!isAuthenticated) {
     return <Navigate to="/admin/login" />;
   }
   
   if (!isAdmin) {
-    return <Navigate to="/auth" />;
+    // If logged in but not an admin, redirect to user dashboard or a general page
+    return <Navigate to="/dashboard" />;
   }
   
   return <>{children}</>;

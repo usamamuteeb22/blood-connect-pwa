@@ -5,10 +5,13 @@ import type { User, Session } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
+const ADMIN_EMAIL = 'usamaweb246@gmail.com';
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData: any) => Promise<void>;
   signOut: () => Promise<void>;
@@ -21,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -30,6 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        const isAdminUser = currentSession?.user?.email === ADMIN_EMAIL;
+        setIsAdmin(isAdminUser);
         setLoading(false);
         
         // Defer additional actions with setTimeout to prevent deadlocks
@@ -45,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      const isAdminUser = currentSession?.user?.email === ADMIN_EMAIL;
+      setIsAdmin(isAdminUser);
       setLoading(false);
     });
 
@@ -55,15 +63,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         throw error;
       }
+      if (!data.user) {
+        throw new Error("Login failed, user not found.");
+      }
+
+      const isAdminUser = data.user.email === ADMIN_EMAIL;
+
       toast({
-        title: "Welcome back!",
+        title: isAdminUser ? "Welcome Admin!" : "Welcome back!",
         description: "You have successfully signed in.",
       });
-      navigate("/dashboard");
+
+      if (isAdminUser) {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
         title: "Authentication failed",
@@ -129,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         loading,
+        isAdmin,
         signIn,
         signUp,
         signOut,

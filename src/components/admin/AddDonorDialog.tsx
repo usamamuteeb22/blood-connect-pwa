@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useAddDonorForm } from "@/hooks/useAddDonorForm";
 
 interface AddDonorDialogProps {
   open: boolean;
@@ -17,134 +15,7 @@ interface AddDonorDialogProps {
 }
 
 const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) => {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    age: "",
-    weight: "",
-    blood_type: "",
-    city: "",
-    address: "",
-    is_eligible: true,
-  });
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      age: "",
-      weight: "",
-      blood_type: "",
-      city: "",
-      address: "",
-      is_eligible: true,
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      // Validate required fields
-      if (!formData.name || !formData.email || !formData.phone || !formData.blood_type || 
-          !formData.age || !formData.weight || !formData.city || !formData.address) {
-        throw new Error("Please fill in all required fields");
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        throw new Error("Please enter a valid email address");
-      }
-
-      // Validate age and weight
-      const age = parseInt(formData.age);
-      const weight = parseInt(formData.weight);
-      
-      if (age < 18 || age > 65) {
-        throw new Error("Age must be between 18 and 65");
-      }
-      
-      if (weight < 50) {
-        throw new Error("Weight must be at least 50kg");
-      }
-
-      // Create a user account for this donor first
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: 'TempPassword123!', // Temporary password - user should reset
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.name,
-          phone: formData.phone,
-          blood_type: formData.blood_type,
-          role: 'user'
-        }
-      });
-
-      if (authError) {
-        // If user already exists, we'll just create the donor record without a user_id
-        if (authError.message.includes('already registered')) {
-          console.log('User already exists, creating donor record only');
-        } else {
-          throw authError;
-        }
-      }
-
-      const userId = authData?.user?.id || null;
-
-      // Insert donor into database
-      const { error } = await supabase
-        .from('donors')
-        .insert({
-          user_id: userId, // This might be null if user creation failed
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          age: age,
-          weight: weight,
-          blood_type: formData.blood_type,
-          city: formData.city,
-          address: formData.address,
-          is_eligible: formData.is_eligible,
-          next_eligible_date: new Date().toISOString(),
-          latitude: null,
-          longitude: null,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: userId 
-          ? "Donor has been added successfully. They can log in with their email and password 'TempPassword123!' (they should change this)."
-          : "Donor has been added successfully to the database.",
-      });
-
-      resetForm();
-      onSuccess();
-      onOpenChange(false);
-    } catch (error: any) {
-      console.error('Error adding donor:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add donor. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  const { formData, isLoading, handleInputChange, handleSubmit } = useAddDonorForm(onSuccess, onOpenChange);
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
   return (

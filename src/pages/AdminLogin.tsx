@@ -1,53 +1,22 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      // Simple admin check based on email since we removed the role system
-      const isAdmin = data.user.email === 'usamaweb246@gmail.com';
-
-      if (isAdmin) {
-        toast({
-          title: "Welcome Admin!",
-          description: "You have successfully logged in to the admin panel.",
-        });
-        navigate("/admin");
-      } else {
-        await supabase.auth.signOut();
-        throw new Error("Access denied. Admin privileges required.");
-      }
-    } catch (err: any) {
-      setError(err.message || "Invalid credentials");
-    } finally {
-      setIsLoading(false);
-    }
+    await signIn(email, password);
+    setIsLoading(false);
   };
 
   return (
@@ -60,14 +29,6 @@ const AdminLogin = () => {
           </CardDescription>
         </CardHeader>
         
-        {error && (
-          <div className="px-6">
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
-        )}
-        
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4 pt-4">
             <div className="space-y-2">
@@ -79,6 +40,7 @@ const AdminLogin = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -89,6 +51,7 @@ const AdminLogin = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <Button 
