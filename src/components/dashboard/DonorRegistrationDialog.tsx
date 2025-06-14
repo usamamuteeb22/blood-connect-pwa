@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface DonorRegistrationDialogProps {
@@ -12,7 +11,6 @@ interface DonorRegistrationDialogProps {
 
 const DonorRegistrationDialog = ({ open, onOpenChange }: DonorRegistrationDialogProps) => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,11 +68,6 @@ const DonorRegistrationDialog = ({ open, onOpenChange }: DonorRegistrationDialog
         ]);
       
       if (error) throw error;
-      
-      toast({
-        title: "Registration Successful",
-        description: "You are now registered as a blood donor!",
-      });
       
       onOpenChange(false);
     } catch (error: any) {
