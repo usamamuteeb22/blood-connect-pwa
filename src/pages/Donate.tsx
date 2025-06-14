@@ -23,26 +23,13 @@ const Donate = () => {
   // Handle button clicks
   const handleCheckEligibility = () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to continue with the donation process.",
-      });
       navigate("/auth");
       return;
     }
-    
-    toast({
-      title: "Eligibility Check",
-      description: "Based on the criteria, you appear to be eligible to donate blood. Please consult with a healthcare professional for a final determination.",
-    });
   };
 
   const handleFullEligibilityCheck = () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to continue with the donation process.",
-      });
       navigate("/auth");
       return;
     }
@@ -52,67 +39,31 @@ const Donate = () => {
 
   const handleFindDonationCenters = () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to view donation centers.",
-      });
       navigate("/auth");
       return;
     }
-    
-    toast({
-      title: "Donation Centers",
-      description: "We're finding donation centers near your location.",
-    });
   };
 
   const handleScheduleDonation = () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to schedule your blood donation appointment.",
-      });
       navigate("/auth");
       return;
     }
-    
-    toast({
-      title: "Schedule Donation",
-      description: "Please sign in to schedule your blood donation appointment.",
-    });
   };
 
   const handleEmergencyRequest = () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to submit a blood request.",
-      });
       navigate("/auth");
       return;
     }
-    
-    toast({
-      title: "Request Submitted",
-      description: "Your blood request has been submitted. You'll be notified when donors respond.",
-    });
     setActiveTab("request");
   };
 
   const handleViewPastRequests = () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to view your past blood requests.",
-      });
       navigate("/auth");
       return;
     }
-    
-    toast({
-      title: "Authentication Required",
-      description: "Please sign in to view your past blood requests.",
-    });
     navigate("/auth");
   };
 

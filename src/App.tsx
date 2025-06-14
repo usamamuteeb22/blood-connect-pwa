@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from "./contexts/AuthContext";
 import { LocationProvider } from "./contexts/LocationContext";
@@ -19,7 +18,6 @@ import AdminPanel from "./pages/AdminPanel";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import EligibilityForm from "./components/donation/EligibilityForm";
-import { Toaster } from './components/ui/toaster';
 
 function App() {
   return (
@@ -58,7 +56,6 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <Toaster />
         </LocationProvider>
       </AuthProvider>
     </BrowserRouter>

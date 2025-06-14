@@ -1,7 +1,5 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 const initialFormData = {
   name: "",
@@ -16,7 +14,6 @@ const initialFormData = {
 };
 
 export const useAddDonorForm = (onSuccess: () => void, onOpenChange: (open: boolean) => void) => {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
 
@@ -84,23 +81,11 @@ export const useAddDonorForm = (onSuccess: () => void, onOpenChange: (open: bool
 
       if (dbError) throw dbError;
 
-      toast({
-        title: "Success!",
-        description: userId 
-          ? "Donor has been added successfully. They can log in with their email and password 'TempPassword123!'."
-          : "Donor has been added successfully to the database.",
-      });
-
       resetForm();
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error adding donor:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add donor. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
