@@ -1,8 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -41,7 +39,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      {/* Navbar is now managed globally in App */}
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="relative py-20 px-4 overflow-hidden">

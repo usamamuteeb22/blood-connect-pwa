@@ -21,12 +21,14 @@ import DonorProfilePage from "./pages/admin/DonorProfilePage";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import EligibilityForm from "./components/donation/EligibilityForm";
+import Navbar from "@/components/layout/Navbar"; // Ensure Navbar is imported
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <LocationProvider>
+          <Navbar /> {/* Always inside context providers */}
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
@@ -84,4 +86,3 @@ function App() {
 }
 
 export default App;
-
