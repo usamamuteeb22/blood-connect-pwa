@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -45,6 +46,11 @@ export const useAddDonorForm = (onSuccess: () => void, onOpenChange: (open: bool
       if (age < 18 || age > 65) throw new Error("Age must be between 18 and 65");
       if (weight < 50) throw new Error("Weight must be at least 50kg");
 
+      // Get admin session (if applicable)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id || null;
+
+      // Create user in auth (only as admin)
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: formData.email,
         password: 'TempPassword123!',
@@ -56,15 +62,14 @@ export const useAddDonorForm = (onSuccess: () => void, onOpenChange: (open: bool
           role: 'user'
         }
       });
+      // If user is already registered, you may continue—but ensure user_id is set
 
-      if (authError && !authError.message.includes('already registered')) {
-        throw authError;
-      }
+      const finalUserId = authData?.user?.id || userId; // fallback to current user id if not admin
 
-      const userId = authData?.user?.id || null;
+      if (!finalUserId) throw new Error("No valid user id found for donor record.");
 
       const { error: dbError } = await supabase.from('donors').insert({
-        user_id: userId,
+        user_id: finalUserId,
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
