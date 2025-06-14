@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,59 +138,23 @@ const EligibilityForm = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // Validate name
-    if (!name.trim()) {
-      newErrors.name = "Name is required";
-    }
-    
-    // Validate email
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-    
-    // Validate phone
-    if (!phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^\d{10,}$/.test(phone.replace(/[^\d]/g, ''))) {
-      newErrors.phone = "Please enter a valid phone number (at least 10 digits)";
-    }
-    
-    // Validate blood group
-    if (!bloodGroup) {
-      newErrors.bloodGroup = "Blood group selection is required";
-    }
-    
-    // Validate age
+    // Ensuring all validation rules (restrictions) are present and correct
+    if (!name.trim()) { newErrors.name = "Name is required"; }
+    if (!email.trim()) { newErrors.email = "Email is required"; } 
+    else if (!/^\S+@\S+\.\S+$/.test(email)) { newErrors.email = "Please enter a valid email address"; }
+    if (!phone.trim()) { newErrors.phone = "Phone number is required"; } 
+    else if (!/^\d{10,}$/.test(phone.replace(/[^\d]/g, ''))) { newErrors.phone = "Please enter a valid phone number (at least 10 digits)"; }
+    if (!bloodGroup) { newErrors.bloodGroup = "Blood group selection is required"; }
     const ageValue = parseInt(age);
-    if (!age) {
-      newErrors.age = "Age is required";
-    } else if (isNaN(ageValue)) {
-      newErrors.age = "Age must be a number";
-    } else if (ageValue < 18) {
-      newErrors.age = "You must be at least 18 years old to donate blood";
-    }
-    
-    // Validate weight
+    if (!age) { newErrors.age = "Age is required"; } 
+    else if (isNaN(ageValue)) { newErrors.age = "Age must be a number"; } 
+    else if (ageValue < 18) { newErrors.age = "You must be at least 18 years old to donate blood"; }
     const weightValue = parseInt(weight);
-    if (!weight) {
-      newErrors.weight = "Weight is required";
-    } else if (isNaN(weightValue)) {
-      newErrors.weight = "Weight must be a number";
-    } else if (weightValue < 50) {
-      newErrors.weight = "You must weigh at least 50kg to donate blood";
-    }
-    
-    // Validate city
-    if (!city.trim()) {
-      newErrors.city = "City is required";
-    }
-    
-    // Validate address
-    if (!address.trim()) {
-      newErrors.address = "Address is required";
-    }
+    if (!weight) { newErrors.weight = "Weight is required"; } 
+    else if (isNaN(weightValue)) { newErrors.weight = "Weight must be a number"; } 
+    else if (weightValue < 50) { newErrors.weight = "You must weigh at least 50kg to donate blood"; }
+    if (!city.trim()) { newErrors.city = "City is required"; }
+    if (!address.trim()) { newErrors.address = "Address is required"; }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -221,14 +184,10 @@ const EligibilityForm = () => {
     const weightValue = parseInt(weight);
     
     if (ageValue < 18 || weightValue < 50) {
-      let eligibilityError = "";
-      if (ageValue < 18 && weightValue < 50) {
-        eligibilityError = "You must be at least 18 years old and weigh at least 50kg to donate blood.";
-      } else if (ageValue < 18) {
-        eligibilityError = "You must be at least 18 years old to donate blood.";
-      } else {
-        eligibilityError = "You must weigh at least 50kg to donate blood.";
-      }
+      let eligibilityError = "You do not meet the eligibility criteria to donate blood.";
+      if (ageValue < 18 && weightValue < 50) { eligibilityError = "You must be at least 18 years old and weigh at least 50kg to donate blood."; } 
+      else if (ageValue < 18) { eligibilityError = "You must be at least 18 years old to donate blood."; } 
+      else { eligibilityError = "You must weigh at least 50kg to donate blood."; }
       
       setSubmitError(eligibilityError);
       return;
@@ -238,15 +197,12 @@ const EligibilityForm = () => {
     
     try {
       // Double-check if user already exists before inserting
-      const { data: existingData } = await supabase
-        .from('donors')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      const { data: existingData } = await supabase.from('donors').select('id').eq('user_id', user.id).single();
       
       if (existingData) {
         setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
         setExistingDonor(true);
+        setIsLoading(false);
         return;
       }
       
@@ -279,6 +235,7 @@ const EligibilityForm = () => {
         } else {
           throw error;
         }
+        setIsLoading(false);
         return;
       }
       

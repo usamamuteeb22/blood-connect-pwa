@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -48,10 +47,7 @@ const Donate = () => {
       return;
     }
     
-    toast({
-      title: "Full Eligibility Guide",
-      description: "Please answer a few questions to determine your eligibility to donate blood.",
-    });
+    navigate("/donate/eligibility");
   };
 
   const handleFindDonationCenters = () => {
