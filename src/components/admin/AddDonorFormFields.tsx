@@ -29,7 +29,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
           />
         </div>
 
-        {/* Email - now optional */}
+        {/* Email - optional */}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -68,7 +68,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
           />
         </div>
 
-        {/* Weight - now optional */}
+        {/* Weight - optional */}
         <div className="space-y-2">
           <Label htmlFor="weight">Weight (kg)</Label>
           <Input
@@ -79,6 +79,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
             onChange={(e) => handleInputChange("weight", e.target.value)}
             placeholder="70"
           />
+          <p className="text-xs text-gray-500">Optional - leave empty if unknown</p>
         </div>
 
         {/* Blood Type */}
@@ -109,7 +110,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
         </div>
       </div>
 
-      {/* Address - now optional */}
+      {/* Address - optional */}
       <div className="space-y-2">
         <Label htmlFor="address">Address</Label>
         <Textarea
@@ -119,6 +120,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
           placeholder="123 Main Street, Apt 4B, New York, NY 10001"
           rows={3}
         />
+        <p className="text-xs text-gray-500">Optional - leave empty if unknown</p>
       </div>
 
       {/* Status */}

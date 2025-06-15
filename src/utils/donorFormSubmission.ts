@@ -56,50 +56,60 @@ export const submitDonorForm = async (
   // Only admin can create new Supabase users
   let finalUserId = userId;
   let authData, authError;
-  if (!userId) {
-    // Only create auth user if email is provided
-    if (formData.email) {
-      const res = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: "TempPassword123!",
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.name,
-          phone: formData.phone,
-          blood_type: formData.blood_type,
-          role: "user",
-        },
-      });
-      authData = res.data;
-      authError = res.error;
-      if (authError) {
-        if (authError.message.includes("already registered")) {
-          // Proceed: user already exists
-        } else {
-          throw new Error("Could not register user. Please verify they are not already registered.");
-        }
+  
+  // Only create auth user if email is provided and we don't have a user session
+  if (!userId && formData.email) {
+    const res = await supabase.auth.admin.createUser({
+      email: formData.email,
+      password: "TempPassword123!",
+      email_confirm: true,
+      user_metadata: {
+        full_name: formData.name,
+        phone: formData.phone,
+        blood_type: formData.blood_type,
+        role: "user",
+      },
+    });
+    authData = res.data;
+    authError = res.error;
+    
+    if (authError) {
+      if (authError.message.includes("already registered")) {
+        // If user already exists, we'll proceed without creating auth user
+        console.log("User already exists in auth, proceeding with donor creation");
+      } else {
+        throw new Error("Could not register user. Please verify they are not already registered.");
       }
+    } else {
       finalUserId = authData?.user?.id || null;
     }
   }
 
-  const { error: dbError } = await supabase.from("donors").insert({
+  // Prepare donor data with proper null handling
+  const donorData = {
     user_id: finalUserId,
     name: formData.name,
-    email: formData.email || null,
+    email: formData.email || null, // Now nullable
     phone: formData.phone,
     age: ageValidation.parsedAge!,
-    weight: weightValidation.parsedWeight || null,
+    weight: weightValidation.parsedWeight || null, // Now nullable
     blood_type: formData.blood_type,
     city: formData.city,
-    address: formData.address || null,
+    address: formData.address || null, // Now nullable
     is_eligible: formData.is_eligible,
     next_eligible_date: new Date().toISOString(),
     latitude: null,
     longitude: null,
-  });
+  };
 
-  if (dbError) throw new Error("Failed to save donor.");
+  console.log("Inserting donor data:", donorData);
+
+  const { error: dbError } = await supabase.from("donors").insert(donorData);
+
+  if (dbError) {
+    console.error("Database error:", dbError);
+    throw new Error(`Failed to save donor: ${dbError.message}`);
+  }
 
   onSuccess();
   onOpenChange(false);

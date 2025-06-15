@@ -109,13 +109,13 @@ export type Database = {
       }
       donors: {
         Row: {
-          address: string
+          address: string | null
           age: number
           availability: boolean | null
           blood_type: string
           city: string
           created_at: string
-          email: string
+          email: string | null
           geom: unknown | null
           id: string
           is_eligible: boolean
@@ -125,16 +125,16 @@ export type Database = {
           next_eligible_date: string
           phone: string
           user_id: string
-          weight: number
+          weight: number | null
         }
         Insert: {
-          address: string
+          address?: string | null
           age: number
           availability?: boolean | null
           blood_type: string
           city: string
           created_at?: string
-          email: string
+          email?: string | null
           geom?: unknown | null
           id?: string
           is_eligible?: boolean
@@ -144,16 +144,16 @@ export type Database = {
           next_eligible_date: string
           phone: string
           user_id: string
-          weight: number
+          weight?: number | null
         }
         Update: {
-          address?: string
+          address?: string | null
           age?: number
           availability?: boolean | null
           blood_type?: string
           city?: string
           created_at?: string
-          email?: string
+          email?: string | null
           geom?: unknown | null
           id?: string
           is_eligible?: boolean
@@ -163,7 +163,7 @@ export type Database = {
           next_eligible_date?: string
           phone?: string
           user_id?: string
-          weight?: number
+          weight?: number | null
         }
         Relationships: []
       }

@@ -20,7 +20,11 @@ export const validateAge = (age: string): { isValid: boolean; parsedAge?: number
 };
 
 export const validateWeight = (weight: string): { isValid: boolean; parsedWeight?: number } => {
-  if (!weight) return { isValid: true, parsedWeight: undefined };
+  // Weight is now optional - if empty string, return valid with undefined
+  if (!weight || weight.trim() === '') {
+    return { isValid: true, parsedWeight: undefined };
+  }
+  
   const parsedWeight = parseInt(weight);
   const isValid = !isNaN(parsedWeight) && parsedWeight >= 50;
   return { isValid, parsedWeight: isValid ? parsedWeight : undefined };
