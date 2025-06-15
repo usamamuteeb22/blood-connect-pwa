@@ -84,6 +84,11 @@ const RequestList = () => {
     return false;
   });
 
+  const handleShowInfo = (request: BloodRequestWithDonor) => {
+    // This function is now handled within the card component
+    console.log("Show info for request:", request.id);
+  };
+
   return (
     <section className="py-16 px-4">
       <div className="container mx-auto max-w-6xl">
@@ -101,9 +106,7 @@ const RequestList = () => {
             <p className="text-gray-500">Loading requests...</p>
           </div>
         ) : filteredRequests.length > 0 ? (
-          <RequestGrid requests={filteredRequests} onRespond={(request) => 
-            navigate('/dashboard', { state: { openRequestDialog: request } })
-          } />
+          <RequestGrid requests={filteredRequests} onRespond={handleShowInfo} />
         ) : (
           <RequestEmptyState filter={filter} onCreateRequest={() => 
             navigate('/donate', { state: { activeTab: 'request' } })

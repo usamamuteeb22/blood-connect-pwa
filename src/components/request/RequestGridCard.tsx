@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Clock, MapPin, Zap } from "lucide-react";
+import { AlertCircle, Clock, MapPin, Zap, Info } from "lucide-react";
 import { BloodRequestWithDonor } from "@/types/custom";
 
 interface RequestGridCardProps {
@@ -34,6 +34,23 @@ const RequestGridCard = ({ request, onRespond }: RequestGridCardProps) => {
       case 'normal': return 'Normal';
       default: return 'Normal';
     }
+  };
+
+  const handleShowInfo = () => {
+    alert(`Blood Request Details:
+
+Requester: ${request.requester_name}
+Blood Type: ${request.blood_type}
+Urgency: ${getUrgencyLabel(request.urgency_level)}
+Reason: ${request.reason}
+City: ${request.city}
+Units Needed: ${request.units_needed}
+${request.needed_by ? `Needed By: ${new Date(request.needed_by).toLocaleDateString()}` : ''}
+${request.hospital_name ? `Hospital: ${request.hospital_name}` : ''}
+Contact: ${request.contact}
+Address: ${request.address}
+
+To donate, please contact the requester directly using the contact information provided.`);
   };
 
   return (
@@ -92,10 +109,11 @@ const RequestGridCard = ({ request, onRespond }: RequestGridCardProps) => {
 
       <div className="flex gap-2">
         <Button 
-          className="flex-1 bg-red-600 hover:bg-red-700"
-          onClick={() => onRespond(request)}
+          className="flex-1 bg-blue-600 hover:bg-blue-700"
+          onClick={handleShowInfo}
         >
-          Respond to Request
+          <Info className="w-4 h-4 mr-2" />
+          Show Info
         </Button>
         <Button 
           variant="outline"
