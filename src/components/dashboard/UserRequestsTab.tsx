@@ -48,10 +48,16 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
 
         if (error) throw error;
 
+        // Get display name from user_metadata or fallback to email
+        const displayName =
+          (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) ||
+          user.email ||
+          "Unknown";
+
         // Format data for UI
         const formatted = (data || []).map((r: any) => ({
           id: r.id,
-          reason: r.reason || "",
+          reason: r.reason,
           city: r.city,
           address: r.address,
           contact: r.contact,
@@ -62,7 +68,7 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
           donor_name: r.donors?.name || null,
           donor_phone: r.donors?.phone || null,
           requester_id: user.id,
-          requester_name: user.full_name || user.email || "",
+          requester_name: displayName,
         }));
 
         setRequests(formatted);
@@ -143,7 +149,7 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-gray-500 font-medium">Reason</p>
-                  <p>{req.reason}</p>
+                  <p>{req.reason ? req.reason : "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 font-medium">City</p>
