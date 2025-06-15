@@ -106,54 +106,77 @@ const AnalyticsDashboard = ({ donors }: { donors: Donor[] }) => {
   if (loading) return <div className="flex justify-center py-6">Loading analytics...</div>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Totals */}
-      <Card className="p-4 flex flex-col gap-2 justify-center items-center">
-        <span className="text-xs text-gray-600">This Month</span>
-        <span className="text-xl font-bold text-blood">{donationStats.monthly}</span>
-        <span className="text-xs text-gray-600">Donations</span>
-      </Card>
-      <Card className="p-4 flex flex-col gap-2 justify-center items-center">
-        <span className="text-xs text-gray-600">This Year</span>
-        <span className="text-xl font-bold text-blue-600">{donationStats.yearly}</span>
-        <span className="text-xs text-gray-600">Donations</span>
-      </Card>
-      {/* Blood Group Chart */}
-      <Card className="p-4 col-span-2">
-        <div className="font-semibold mb-2 text-center text-blood">Blood Group Distribution</div>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={bloodGroups.map(bg => ({
-            blood_type: bg,
-            count: donationStats.byGroup[bg] || 0,
-          }))}>
-            <XAxis dataKey="blood_type" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Bar dataKey="count">
-              {bloodGroups.map((_, i) => (
-                <Cell key={i} fill={groupColors[i % groupColors.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
-      {/* Top Demand Groups & Donors */}
-      <Card className="p-4 flex flex-col gap-2">
-        <div className="mb-1 font-semibold">In-demand Blood Groups</div>
-        <ol className="text-sm mb-2">
-          {donationStats.topGroups.length === 0 ? <li>N/A</li> :
-            donationStats.topGroups.map((g, i) => (
-              <li key={g.blood_type}>{i+1}. {g.blood_type} <span className="text-gray-500">({g.count} requests)</span></li>
-            ))}
-        </ol>
-        <div className="font-semibold mb-1">Top Active Donors</div>
-        <ol className="text-sm">
-          {donationStats.topDonors.length === 0 ? <li>N/A</li> :
-            donationStats.topDonors.map((d, i) => (
-              <li key={d.email}>{i+1}. {d.name} <span className="text-gray-500">({d.count})</span></li>
-            ))}
-        </ol>
-      </Card>
+    <div className="space-y-6">
+      {/* Top Row - Monthly and Yearly Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col gap-2 justify-center items-center">
+          <span className="text-xs text-gray-600">This Month</span>
+          <span className="text-xl font-bold text-blood">{donationStats.monthly}</span>
+          <span className="text-xs text-gray-600">Donations</span>
+        </Card>
+        <Card className="p-4 flex flex-col gap-2 justify-center items-center">
+          <span className="text-xs text-gray-600">This Year</span>
+          <span className="text-xl font-bold text-blue-600">{donationStats.yearly}</span>
+          <span className="text-xs text-gray-600">Donations</span>
+        </Card>
+        
+        {/* Blood Group Chart - spans 2 columns on larger screens */}
+        <Card className="p-4 sm:col-span-2">
+          <div className="font-semibold mb-2 text-center text-blood">Blood Group Distribution</div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={bloodGroups.map(bg => ({
+              blood_type: bg,
+              count: donationStats.byGroup[bg] || 0,
+            }))}>
+              <XAxis dataKey="blood_type" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="count">
+                {bloodGroups.map((_, i) => (
+                  <Cell key={i} fill={groupColors[i % groupColors.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      {/* Bottom Row - In-demand Groups and Top Donors in separate cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 justify-center">
+        {/* In-demand Blood Groups Card */}
+        <Card className="p-4 flex flex-col gap-2">
+          <div className="mb-1 font-semibold text-center text-blood">In-demand Blood Groups</div>
+          <ol className="text-sm space-y-1">
+            {donationStats.topGroups.length === 0 ? (
+              <li className="text-center text-gray-500">No pending requests</li>
+            ) : (
+              donationStats.topGroups.map((g, i) => (
+                <li key={g.blood_type} className="flex justify-between items-center">
+                  <span>{i+1}. {g.blood_type}</span>
+                  <span className="text-gray-500">({g.count} requests)</span>
+                </li>
+              ))
+            )}
+          </ol>
+        </Card>
+
+        {/* Top Active Donors Card */}
+        <Card className="p-4 flex flex-col gap-2">
+          <div className="font-semibold mb-1 text-center text-blood">Top Active Donors</div>
+          <ol className="text-sm space-y-1">
+            {donationStats.topDonors.length === 0 ? (
+              <li className="text-center text-gray-500">No donations recorded</li>
+            ) : (
+              donationStats.topDonors.map((d, i) => (
+                <li key={d.email} className="flex justify-between items-center">
+                  <span className="truncate">{i+1}. {d.name}</span>
+                  <span className="text-gray-500">({d.count})</span>
+                </li>
+              ))
+            )}
+          </ol>
+        </Card>
+      </div>
     </div>
   );
 };
