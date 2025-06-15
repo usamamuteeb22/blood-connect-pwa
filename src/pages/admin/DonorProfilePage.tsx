@@ -75,7 +75,7 @@ const DonorProfilePage = () => {
         .insert([{
           donor_id: donor.id,
           request_id: null, // Most manual entries will not be tied to a blood request
-          recipient_name: donor.name, // Changed from 'Manual Entry' to donor name
+          recipient_name: donor.name, // Using donor name as requested
           blood_type: donor.blood_type,
           city: donor.city,
           date: date,
@@ -87,7 +87,10 @@ const DonorProfilePage = () => {
       } else {
         toast.success("Donation added successfully!");
         setDonationCount(prev => prev + 1);
-        fetchProfile();
+        // Refresh the profile data to get updated donation list
+        await fetchProfile();
+        // Trigger a custom event to notify analytics dashboard to refresh
+        window.dispatchEvent(new CustomEvent('donationAdded'));
       }
     } catch (e) {
       toast.error("Error adding donation. Please try again.");

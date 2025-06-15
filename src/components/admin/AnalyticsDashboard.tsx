@@ -23,85 +23,99 @@ const AnalyticsDashboard = ({ donors }: { donors: Donor[] }) => {
   const [loading, setLoading] = useState(true);
 
   // Fetch analytics: donations for month/year, by group, top donors, in-demand
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        // Donations for this year, this month, by group
-        const year = new Date().getFullYear();
-        const month = new Date().getMonth() + 1; // Jan = 0
-        let { data: donations, error } = await supabase
-          .from('donations')
-          .select('*, donor:donor_id(name, email, blood_type)')
-          .order('date', { ascending: false });
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      // Donations for this year, this month, by group
+      const year = new Date().getFullYear();
+      const month = new Date().getMonth() + 1; // Jan = 0
+      let { data: donations, error } = await supabase
+        .from('donations')
+        .select('*, donor:donor_id(name, email, blood_type)')
+        .order('date', { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        // Totals
-        let monthTotal = 0, yearTotal = 0;
-        let groupMap: Record<string, number> = {};
-        let donorMap: Record<string, { name: string, email: string, count: number }> = {};
-        let groupDemand: Record<string, number> = {};
+      // Totals
+      let monthTotal = 0, yearTotal = 0;
+      let groupMap: Record<string, number> = {};
+      let donorMap: Record<string, { name: string, email: string, count: number }> = {};
+      let groupDemand: Record<string, number> = {};
 
-        for (const d of donations || []) {
-          const donDate = d.date ? parseISO(d.date) : null;
-          if (donDate && donDate.getFullYear() === year) {
-            yearTotal += 1;
-            if (donDate.getMonth() + 1 === month) {
-              monthTotal += 1;
-            }
-          }
-          // Group
-          if (d.blood_type) {
-            groupMap[d.blood_type] = (groupMap[d.blood_type] || 0) + 1;
-          }
-          // Top donors
-          if (d.donor && d.donor.email) {
-            const key = d.donor.email;
-            donorMap[key] = donorMap[key] || { name: d.donor.name, email: key, count: 0 };
-            donorMap[key].count += 1;
+      for (const d of donations || []) {
+        const donDate = d.date ? parseISO(d.date) : null;
+        if (donDate && donDate.getFullYear() === year) {
+          yearTotal += 1;
+          if (donDate.getMonth() + 1 === month) {
+            monthTotal += 1;
           }
         }
-        // Top in-demand blood groups (from blood_requests with status 'pending')
-        const { data: requests } = await supabase
-          .from("blood_requests")
-          .select("blood_type")
-          .eq("status", "pending");
-        if (requests) {
-          for (const r of requests) {
-            if (r.blood_type) {
-              groupDemand[r.blood_type] = (groupDemand[r.blood_type] || 0) + 1;
-            }
-          }
+        // Group
+        if (d.blood_type) {
+          groupMap[d.blood_type] = (groupMap[d.blood_type] || 0) + 1;
         }
-        // Top 5 donors
-        const topDonors = Object.values(donorMap).sort((a,b) => b.count - a.count).slice(0, 5);
-        // Distribution by group (recharts)
-        const byGroupArr = bloodGroups.map(bg => ({
-          blood_type: bg,
-          count: groupMap[bg] || 0,
-        }));
-        // Top demand groups
-        const topGroups = Object.entries(groupDemand)
-          .map(([blood_type, count]) => ({ blood_type, count }))
-          .sort((a,b) => b.count - a.count)
-          .slice(0, 5);
-
-        setDonationStats({
-          monthly: monthTotal,
-          yearly: yearTotal,
-          byGroup: groupMap,
-          topGroups,
-          topDonors,
-        });
-      } catch (e) {
-        console.error(e);
+        // Top donors
+        if (d.donor && d.donor.email) {
+          const key = d.donor.email;
+          donorMap[key] = donorMap[key] || { name: d.donor.name, email: key, count: 0 };
+          donorMap[key].count += 1;
+        }
       }
-      setLoading(false);
-    };
+      // Top in-demand blood groups (from blood_requests with status 'pending')
+      const { data: requests } = await supabase
+        .from("blood_requests")
+        .select("blood_type")
+        .eq("status", "pending");
+      if (requests) {
+        for (const r of requests) {
+          if (r.blood_type) {
+            groupDemand[r.blood_type] = (groupDemand[r.blood_type] || 0) + 1;
+          }
+        }
+      }
+      // Top 5 donors
+      const topDonors = Object.values(donorMap).sort((a,b) => b.count - a.count).slice(0, 5);
+      // Distribution by group (recharts)
+      const byGroupArr = bloodGroups.map(bg => ({
+        blood_type: bg,
+        count: groupMap[bg] || 0,
+      }));
+      // Top demand groups
+      const topGroups = Object.entries(groupDemand)
+        .map(([blood_type, count]) => ({ blood_type, count }))
+        .sort((a,b) => b.count - a.count)
+        .slice(0, 5);
 
+      setDonationStats({
+        monthly: monthTotal,
+        yearly: yearTotal,
+        byGroup: groupMap,
+        topGroups,
+        topDonors,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchStats();
   }, [donors]);
+
+  // Listen for donation updates
+  useEffect(() => {
+    const handleDonationAdded = () => {
+      console.log('Donation added event received, refreshing analytics...');
+      fetchStats();
+    };
+
+    window.addEventListener('donationAdded', handleDonationAdded);
+    
+    return () => {
+      window.removeEventListener('donationAdded', handleDonationAdded);
+    };
+  }, []);
 
   if (loading) return <div className="flex justify-center py-6">Loading analytics...</div>;
 
