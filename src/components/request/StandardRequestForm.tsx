@@ -89,7 +89,7 @@ const StandardRequestForm = () => {
       // Get the first available donor
       const donorId = donors && donors.length > 0 ? donors[0].id : null;
       
-      // Create the blood request with all new fields
+      // Create the blood request with only existing fields
       const requestData = {
         requester_id: user!.id,
         donor_id: donorId,
@@ -99,13 +99,7 @@ const StandardRequestForm = () => {
         city: formData.city,
         address: formData.address,
         contact: formData.contact,
-        status: "pending" as const,
-        urgency_level: formData.urgencyLevel,
-        units_needed: formData.unitsNeeded,
-        needed_by: formData.neededBy || null,
-        hospital_name: formData.hospitalName || null,
-        doctor_name: formData.doctorName || null,
-        additional_notes: formData.additionalNotes || null
+        status: "pending" as const
       };
       
       const { error } = await supabase
@@ -113,41 +107,6 @@ const StandardRequestForm = () => {
         .insert([requestData]);
       
       if (error) throw error;
-      
-      // Create notification for the donor if one was found
-      if (donorId) {
-        const { data: donorUser } = await supabase
-          .from('donors')
-          .select('user_id, name')
-          .eq('id', donorId)
-          .single();
-          
-        if (donorUser) {
-          await supabase
-            .from('notifications')
-            .insert([{
-              user_id: donorUser.user_id,
-              type: "request_received",
-              title: "New Blood Request",
-              message: `You have received a new ${formData.bloodType} blood request from ${formData.name} in ${formData.city}.`,
-              related_type: "blood_request"
-            }]);
-        }
-      }
-      
-      // Log activity
-      await supabase
-        .from('activity_logs')
-        .insert([{
-          user_id: user!.id,
-          action: "blood_request_created",
-          entity_type: "blood_request",
-          details: {
-            blood_type: formData.bloodType,
-            city: formData.city,
-            urgency_level: formData.urgencyLevel
-          }
-        }]);
       
       toast.success("Your blood request has been successfully submitted.");
       
@@ -241,45 +200,6 @@ const StandardRequestForm = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="urgencyLevel">Urgency Level</Label>
-              <Select value={formData.urgencyLevel} onValueChange={(value: any) => handleInputChange("urgencyLevel", value)}>
-                <SelectTrigger id="urgencyLevel">
-                  <SelectValue placeholder="Select urgency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {urgencyLevels.map(level => (
-                    <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-1.5">
-              <Label htmlFor="unitsNeeded">Units Needed</Label>
-              <Input
-                id="unitsNeeded"
-                type="number"
-                min="1"
-                value={formData.unitsNeeded}
-                onChange={(e) => handleInputChange("unitsNeeded", parseInt(e.target.value) || 1)}
-                className={errors.unitsNeeded ? "border-destructive" : ""}
-              />
-              {errors.unitsNeeded && <p className="text-sm font-medium text-destructive">{errors.unitsNeeded}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="neededBy">Needed By (Optional)</Label>
-              <Input
-                id="neededBy"
-                type="date"
-                value={formData.neededBy}
-                onChange={(e) => handleInputChange("neededBy", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1.5">
               <Label htmlFor="city" className={errors.city ? "text-destructive" : ""}>City *</Label>
               <Input
                 id="city"
@@ -317,38 +237,6 @@ const StandardRequestForm = () => {
               className={errors.address ? "border-destructive" : ""}
             />
             {errors.address && <p className="text-sm font-medium text-destructive">{errors.address}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1.5">
-              <Label htmlFor="hospitalName">Hospital Name (Optional)</Label>
-              <Input
-                id="hospitalName"
-                placeholder="Hospital or medical facility"
-                value={formData.hospitalName}
-                onChange={(e) => handleInputChange("hospitalName", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="doctorName">Doctor Name (Optional)</Label>
-              <Input
-                id="doctorName"
-                placeholder="Attending physician"
-                value={formData.doctorName}
-                onChange={(e) => handleInputChange("doctorName", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="additionalNotes">Additional Notes (Optional)</Label>
-            <Textarea
-              id="additionalNotes"
-              placeholder="Any additional information or special requirements"
-              value={formData.additionalNotes}
-              onChange={(e) => handleInputChange("additionalNotes", e.target.value)}
-            />
           </div>
         </CardContent>
         

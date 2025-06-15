@@ -14,23 +14,50 @@ const RequestList = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
 
-  // Fetch all blood requests
+  // Fetch all blood requests with donor info using join
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         setLoading(true);
         
-        // Use the view for better performance
         const { data, error } = await supabase
-          .from('blood_request_details')
-          .select('*')
+          .from('blood_requests')
+          .select(`
+            *,
+            donors:donor_id (
+              name,
+              phone,
+              email,
+              is_eligible,
+              next_eligible_date
+            )
+          `)
           .eq('status', 'pending')
           .order('created_at', { ascending: false });
           
         if (error) throw error;
         
         if (data) {
-          setRequests(data);
+          // Transform the data to match BloodRequestWithDonor interface
+          const transformedData = data.map((request: any) => ({
+            ...request,
+            urgency_level: 'normal' as const,
+            needed_by: null,
+            units_needed: 1,
+            hospital_name: null,
+            doctor_name: null,
+            additional_notes: null,
+            approved_at: null,
+            completed_at: null,
+            updated_at: request.created_at,
+            donor_name: request.donors?.name || null,
+            donor_phone: request.donors?.phone || null,
+            donor_email: request.donors?.email || null,
+            donor_is_eligible: request.donors?.is_eligible || null,
+            donor_next_eligible_date: request.donors?.next_eligible_date || null,
+          }));
+          
+          setRequests(transformedData);
         }
       } catch (error) {
         console.error("Error fetching requests:", error);

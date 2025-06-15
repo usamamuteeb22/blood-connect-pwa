@@ -46,7 +46,7 @@ const RecentActivity = ({ userRequests, userDonations, donorRequests }: RecentAc
               <div>
                 <p className="font-medium">Donation Completed</p>
                 <p className="text-sm text-gray-500">
-                  {new Date(donation.date).toLocaleDateString()}
+                  {new Date(donation.donation_date).toLocaleDateString()}
                 </p>
               </div>
               <div className="text-right">

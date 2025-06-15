@@ -11,7 +11,7 @@ const fetchDonorProfile = async (userId: string): Promise<Donor | null> => {
       .from('donors')
       .select('*')
       .eq('user_id', userId)
-      .maybeSingle(); // Use maybeSingle instead of single to handle 0 or 1 results
+      .maybeSingle();
       
     if (error) {
       console.error('Error fetching donor profile:', error);
@@ -39,10 +39,19 @@ const fetchUserRequests = async (userId: string): Promise<BloodRequest[]> => {
       return [];
     }
     
-    // Type assertion to ensure status matches our interface
+    // Transform data to match BloodRequest interface
     const typedData = (data || []).map(item => ({
       ...item,
-      status: item.status as "pending" | "approved" | "rejected" | "completed"
+      status: item.status as "pending" | "approved" | "rejected" | "completed",
+      urgency_level: 'normal' as const,
+      needed_by: null,
+      units_needed: 1,
+      hospital_name: null,
+      doctor_name: null,
+      additional_notes: null,
+      approved_at: null,
+      completed_at: null,
+      updated_at: item.created_at
     }));
     
     return typedData;
@@ -55,10 +64,18 @@ const fetchUserRequests = async (userId: string): Promise<BloodRequest[]> => {
 // Function to fetch user donations
 const fetchUserDonations = async (userId: string): Promise<Donation[]> => {
   try {
+    const { data: donorData } = await supabase
+      .from('donors')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!donorData) return [];
+
     const { data, error } = await supabase
       .from('donations')
       .select('*')
-      .eq('donor_id', userId)
+      .eq('donor_id', donorData.id)
       .order('date', { ascending: false });
       
     if (error) {
@@ -66,10 +83,17 @@ const fetchUserDonations = async (userId: string): Promise<Donation[]> => {
       return [];
     }
     
-    // Type assertion to ensure status matches our interface
+    // Transform data to match Donation interface
     const typedData = (data || []).map(item => ({
       ...item,
-      status: item.status as "completed"
+      status: "completed" as const,
+      donation_date: item.date,
+      units_donated: 1,
+      recipient_contact: null,
+      hospital_name: null,
+      notes: null,
+      updated_at: item.date,
+      created_at: item.date
     }));
     
     return typedData;
@@ -94,10 +118,19 @@ const fetchDonorRequests = async (donorId: string): Promise<BloodRequest[]> => {
       return [];
     }
     
-    // Type assertion to ensure status matches our interface
+    // Transform data to match BloodRequest interface
     const typedData = (data || []).map(item => ({
       ...item,
-      status: item.status as "pending" | "approved" | "rejected" | "completed"
+      status: item.status as "pending" | "approved" | "rejected" | "completed",
+      urgency_level: 'normal' as const,
+      needed_by: null,
+      units_needed: 1,
+      hospital_name: null,
+      doctor_name: null,
+      additional_notes: null,
+      approved_at: null,
+      completed_at: null,
+      updated_at: item.created_at
     }));
     
     return typedData;
@@ -168,7 +201,7 @@ export const useDashboardData = () => {
   // Calculate donation stats
   const donationCount = userDonations.length;
   const nextEligibleDate = userDonations.length > 0 
-    ? new Date(new Date(userDonations[0]?.date).getTime() + (56 * 24 * 60 * 60 * 1000)) // 8 weeks
+    ? new Date(new Date(userDonations[0]?.donation_date).getTime() + (56 * 24 * 60 * 60 * 1000)) // 8 weeks
     : null;
   
   // Refresh function for manual data reload
