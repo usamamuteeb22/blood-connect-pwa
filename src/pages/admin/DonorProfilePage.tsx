@@ -23,6 +23,8 @@ const DonorProfilePage = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
+      console.log(`Fetching donor profile for ID: ${id}`);
+      
       // Fetch donor details
       const { data: donorData, error: donorError } = await supabase
         .from('donors')
@@ -30,7 +32,12 @@ const DonorProfilePage = () => {
         .eq('id', id)
         .single();
       
-      if (donorError) throw donorError;
+      if (donorError) {
+        console.error("Donor fetch error:", donorError);
+        throw donorError;
+      }
+      
+      console.log("Fetched donor:", donorData);
       setDonor(donorData);
 
       // Fetch donations for this specific donor only
@@ -40,13 +47,17 @@ const DonorProfilePage = () => {
         .eq('donor_id', id)
         .order('date', { ascending: false });
       
-      if (donationsError) throw donationsError;
+      if (donationsError) {
+        console.error("Donations fetch error:", donationsError);
+        throw donationsError;
+      }
+      
+      console.log(`Fetched ${donationsData?.length || 0} donations for donor ${id}:`, donationsData);
       setDonations(donationsData || []);
       
-      console.log(`Fetched ${donationsData?.length || 0} donations for donor ${id}`);
     } catch (e) {
       console.error("Failed to load profile", e);
-      toast.error("Failed to load donor profile");
+      toast.error("Failed to load donor profile: " + (e as Error).message);
     }
     setLoading(false);
   };
@@ -57,7 +68,7 @@ const DonorProfilePage = () => {
     }
   }, [id]);
 
-  // Helper: robust back navigation (go back if possible, else go to /admin)
+  // Helper: robust back navigation
   const handleBack = () => {
     if (window.history.length > 2) {
       navigate(-1);
@@ -68,62 +79,98 @@ const DonorProfilePage = () => {
 
   // Show confirmation dialog
   const handleAddDonationClick = () => {
+    console.log("Opening donation confirmation dialog");
     setShowConfirmDialog(true);
   };
 
-  // Add new donation (with current date and time)
+  // Add new donation with comprehensive error handling
   const handleConfirmAddDonation = async () => {
-    if (!donor) return;
+    if (!donor) {
+      console.error("No donor data available");
+      toast.error("No donor data available");
+      return;
+    }
+
+    console.log("Starting donation addition process for donor:", donor.id);
     setAddLoading(true);
+    
     try {
       const currentDate = new Date().toISOString();
+      console.log("Creating donation with date:", currentDate);
 
-      // Insert a new donation record
-      const { data: newDonation, error } = await supabase
+      // First, verify the donor exists
+      const { data: donorCheck, error: donorCheckError } = await supabase
+        .from('donors')
+        .select('id, name, blood_type, city')
+        .eq('id', donor.id)
+        .single();
+
+      if (donorCheckError) {
+        console.error("Donor verification failed:", donorCheckError);
+        throw new Error(`Donor verification failed: ${donorCheckError.message}`);
+      }
+
+      console.log("Donor verification successful:", donorCheck);
+
+      // Prepare donation data
+      const donationData = {
+        donor_id: donor.id,
+        request_id: null,
+        recipient_name: donor.name,
+        blood_type: donor.blood_type,
+        city: donor.city,
+        date: currentDate,
+        status: 'completed'
+      };
+
+      console.log("Inserting donation data:", donationData);
+
+      // Insert the donation record
+      const { data: newDonation, error: insertError } = await supabase
         .from('donations')
-        .insert([{
-          donor_id: donor.id,
-          request_id: null,
-          recipient_name: donor.name, // Use donor name as recipient
-          blood_type: donor.blood_type,
-          city: donor.city,
-          date: currentDate,
-          status: 'completed'
-        }])
+        .insert([donationData])
         .select()
         .single();
 
-      if (error) {
-        console.error("Error adding donation:", error);
-        toast.error("Error adding donation: " + error.message);
-      } else {
-        console.log("Successfully added donation:", newDonation);
-        toast.success("Donation added successfully!");
-        
-        // Refresh the profile data to get updated donation list
-        await fetchProfile();
-        
-        // Trigger analytics refresh with more specific event data
-        window.dispatchEvent(new CustomEvent('donationAdded', {
-          detail: {
-            donorId: donor.id,
-            bloodType: donor.blood_type,
-            city: donor.city,
-            date: currentDate
-          }
-        }));
+      if (insertError) {
+        console.error("Donation insertion failed:", insertError);
+        throw new Error(`Failed to add donation: ${insertError.message}`);
       }
-    } catch (e) {
-      console.error("Error adding donation:", e);
-      toast.error("Error adding donation. Please try again.");
+
+      console.log("Donation successfully inserted:", newDonation);
+      toast.success("Donation added successfully!");
+
+      // Refresh the profile data immediately
+      await fetchProfile();
+
+      // Trigger analytics refresh with detailed event data
+      const refreshEvent = new CustomEvent('donationAdded', {
+        detail: {
+          donorId: donor.id,
+          bloodType: donor.blood_type,
+          city: donor.city,
+          date: currentDate,
+          donationId: newDonation.id
+        }
+      });
+      
+      console.log("Dispatching analytics refresh event:", refreshEvent.detail);
+      window.dispatchEvent(refreshEvent);
+
+    } catch (error: any) {
+      console.error("Error in donation addition process:", error);
+      toast.error(error.message || "Failed to add donation. Please try again.");
+    } finally {
+      setAddLoading(false);
+      setShowConfirmDialog(false);
     }
-    setAddLoading(false);
-    setShowConfirmDialog(false);
   };
 
-  // Reset all donations (for testing)
+  // Reset all donations for testing
   const handleResetDonations = async () => {
     if (!donor) return;
+    
+    console.log("Resetting donations for donor:", donor.id);
     
     try {
       const { error } = await supabase
@@ -131,16 +178,25 @@ const DonorProfilePage = () => {
         .delete()
         .eq('donor_id', donor.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Reset donations error:", error);
+        throw error;
+      }
       
+      console.log("Donations reset successfully");
       toast.success("All donations reset for this donor");
+      
+      // Refresh data
       await fetchProfile();
       
       // Trigger analytics refresh
-      window.dispatchEvent(new CustomEvent('donationAdded'));
+      window.dispatchEvent(new CustomEvent('donationAdded', {
+        detail: { reset: true, donorId: donor.id }
+      }));
+      
     } catch (e) {
       console.error("Error resetting donations:", e);
-      toast.error("Error resetting donations");
+      toast.error("Error resetting donations: " + (e as Error).message);
     }
   };
 
@@ -155,6 +211,7 @@ const DonorProfilePage = () => {
           Back
         </Button>
       </div>
+      
       <Card className="mb-3 p-4 flex flex-col gap-2">
         <div className="font-bold text-xl text-blood">{donor.name}</div>
         <div className="text-sm text-gray-600">{donor.email}</div>
@@ -163,14 +220,16 @@ const DonorProfilePage = () => {
         <div className="text-sm">Address: {donor.address}</div>
         <div className="text-sm">Blood Group: {donor.blood_type}</div>
         <div className="text-sm">Total Donations: {donations.length}</div>
+        
         <div className="flex gap-2 mt-2">
           <Button
             onClick={handleAddDonationClick}
-            className="bg-blood text-white"
+            className="bg-blood text-white hover:bg-red-700"
             disabled={addLoading}
           >
-            Add Donation
+            {addLoading ? "Adding..." : "Add Donation"}
           </Button>
+          
           <Button
             variant="outline"
             onClick={() =>
@@ -181,6 +240,7 @@ const DonorProfilePage = () => {
           >
             Export Donations (CSV)
           </Button>
+          
           <Button
             variant="destructive"
             onClick={handleResetDonations}
@@ -190,6 +250,7 @@ const DonorProfilePage = () => {
           </Button>
         </div>
       </Card>
+      
       <Card>
         <CardContent>
           <div className="py-2 font-semibold">
@@ -211,13 +272,15 @@ const DonorProfilePage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {donations.map(d => (
-                  <TableRow key={d.id}>
-                    <TableCell>{format(new Date(d.date), "yyyy-MM-dd HH:mm")}</TableCell>
-                    <TableCell>{d.recipient_name}</TableCell>
-                    <TableCell>{d.blood_type}</TableCell>
-                    <TableCell>{d.city}</TableCell>
-                    <TableCell className="capitalize">{d.status}</TableCell>
+                {donations.map(donation => (
+                  <TableRow key={donation.id}>
+                    <TableCell>{format(new Date(donation.date), "yyyy-MM-dd HH:mm")}</TableCell>
+                    <TableCell>{donation.recipient_name}</TableCell>
+                    <TableCell>{donation.blood_type}</TableCell>
+                    <TableCell>{donation.city}</TableCell>
+                    <TableCell className="capitalize text-green-600 font-medium">
+                      {donation.status}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
