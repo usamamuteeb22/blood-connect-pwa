@@ -1,148 +1,164 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Donor, BloodRequest, Donation } from "@/types/custom";
 
-// Helper function to fetch donor profile
-const fetchDonorProfile = async (userId: string) => {
-  const { data: donor, error } = await supabase
-    .from('donors')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Donor, BloodRequest, Donation } from "@/types/custom";
+
+// Function to fetch donor profile safely
+const fetchDonorProfile = async (userId: string): Promise<Donor | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('donors')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle(); // Use maybeSingle instead of single to handle 0 or 1 results
+      
+    if (error) {
+      console.error('Error fetching donor profile:', error);
+      return null;
+    }
     
-  if (error) {
-    console.error("Error fetching donor profile:", error);
+    return data;
+  } catch (error) {
+    console.error('Error fetching donor profile:', error);
     return null;
   }
-  
-  return donor as Donor | null;
 };
 
-// Helper function to count completed donations
-const fetchDonationCount = async (donorId: string) => {
-  const { data: donationsData, error } = await supabase
-    .from('donations')
-    .select('id')
-    .eq('donor_id', donorId)
-    .eq('status', 'completed');
+// Function to fetch user requests
+const fetchUserRequests = async (userId: string): Promise<BloodRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('blood_requests')
+      .select('*')
+      .eq('requester_id', userId)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching user requests:', error);
+      return [];
+    }
     
-  if (error) {
-    console.error("Error fetching donation count:", error);
-    return 0;
-  }
-  
-  return donationsData?.length || 0;
-};
-
-// Helper function to fetch user requests
-const fetchUserRequests = async (userId: string) => {
-  const { data: requests, error } = await supabase
-    .from('blood_requests')
-    .select('*')
-    .eq('requester_id', userId)
-    .order('created_at', { ascending: false });
-    
-  if (error) {
-    console.error("Error fetching user requests:", error);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching user requests:', error);
     return [];
   }
-  
-  return requests as BloodRequest[] || [];
 };
 
-// Helper function to fetch donor requests - specifically pending status only
-const fetchDonorRequests = async (donorId: string) => {
-  const { data: requests, error } = await supabase
-    .from('blood_requests')
-    .select('*')
-    .eq('donor_id', donorId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+// Function to fetch user donations
+const fetchUserDonations = async (userId: string): Promise<Donation[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('donations')
+      .select('*')
+      .eq('donor_id', userId)
+      .order('date', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching user donations:', error);
+      return [];
+    }
     
-  if (error) {
-    console.error("Error fetching donor requests:", error);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching user donations:', error);
     return [];
   }
-  
-  return requests as BloodRequest[] || [];
 };
 
-// Helper function to fetch donations
-const fetchDonations = async (donorId: string) => {
-  const { data: donations, error } = await supabase
-    .from('donations')
-    .select('*')
-    .eq('donor_id', donorId)
-    .order('date', { ascending: false });
+// Function to fetch donor requests
+const fetchDonorRequests = async (donorId: string): Promise<BloodRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('blood_requests')
+      .select('*')
+      .eq('donor_id', donorId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching donor requests:', error);
+      return [];
+    }
     
-  if (error) {
-    console.error("Error fetching donations:", error);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching donor requests:', error);
     return [];
   }
-  
-  return donations as Donation[] || [];
 };
 
 export const useDashboardData = () => {
   const { user } = useAuth();
-  
   const [userDonor, setUserDonor] = useState<Donor | null>(null);
   const [userRequests, setUserRequests] = useState<BloodRequest[]>([]);
   const [userDonations, setUserDonations] = useState<Donation[]>([]);
   const [donorRequests, setDonorRequests] = useState<BloodRequest[]>([]);
-  const [donationCount, setDonationCount] = useState(0);
-  const [nextEligibleDate, setNextEligibleDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  // Expose refresh trigger setter for components to use
-  const refreshData = () => setRefreshTrigger(prev => prev + 1);
-  
-  // Fetch user data
-  useEffect(() => {
-    if (!user) {
+  // Load all dashboard data
+  const loadDashboardData = useCallback(async () => {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
     
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch donor profile
-        const donor = await fetchDonorProfile(user.id);
-        
-        if (donor) {
-          setUserDonor(donor);
-          setNextEligibleDate(new Date(donor.next_eligible_date));
-          
-          // Fetch donation count
-          const count = await fetchDonationCount(donor.id);
-          setDonationCount(count);
-          
-          // Fetch donor-specific requests - only pending ones
-          const requests = await fetchDonorRequests(donor.id);
-          setDonorRequests(requests);
-          
-          // Fetch donations
-          const donations = await fetchDonations(donor.id);
-          setUserDonations(donations);
-        }
-        
-        // Fetch user requests (always fetch these)
-        const requests = await fetchUserRequests(user.id);
-        setUserRequests(requests);
-      } catch (error: any) {
-        console.error("Error loading dashboard data:", error.message);
-      } finally {
-        setLoading(false);
+    console.log('Loading dashboard data for user:', user.id);
+    setLoading(true);
+    
+    try {
+      // Fetch donor profile first
+      const donorProfile = await fetchDonorProfile(user.id);
+      setUserDonor(donorProfile);
+      
+      // Fetch user requests and donations in parallel
+      const [requests, donations] = await Promise.all([
+        fetchUserRequests(user.id),
+        fetchUserDonations(user.id)
+      ]);
+      
+      setUserRequests(requests);
+      setUserDonations(donations);
+      
+      // If user is a donor, fetch donor-specific requests
+      if (donorProfile?.id) {
+        const donorRequests = await fetchDonorRequests(donorProfile.id);
+        setDonorRequests(donorRequests);
+      } else {
+        setDonorRequests([]);
       }
-    };
-
+      
+      console.log('Dashboard data loaded successfully');
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      // Reset states on error
+      setUserDonor(null);
+      setUserRequests([]);
+      setUserDonations([]);
+      setDonorRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+  
+  // Load data when user changes
+  useEffect(() => {
     loadDashboardData();
-  }, [user, refreshTrigger]); // Add refreshTrigger as a dependency
-
+  }, [loadDashboardData]);
+  
+  // Calculate donation stats
+  const donationCount = userDonations.length;
+  const nextEligibleDate = userDonations.length > 0 
+    ? new Date(new Date(userDonations[0]?.date).getTime() + (56 * 24 * 60 * 60 * 1000)) // 8 weeks
+    : null;
+  
+  // Refresh function for manual data reload
+  const refreshData = useCallback(() => {
+    console.log('Refreshing dashboard data...');
+    return loadDashboardData();
+  }, [loadDashboardData]);
+  
   return {
     userDonor,
     userRequests,
@@ -151,6 +167,6 @@ export const useDashboardData = () => {
     donationCount,
     nextEligibleDate,
     loading,
-    refreshData // Export the refresh function
+    refreshData
   };
 };

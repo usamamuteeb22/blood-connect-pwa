@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Import custom hooks
@@ -18,7 +17,7 @@ import DashboardContainer from "@/components/dashboard/DashboardContainer";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   
@@ -37,6 +36,7 @@ const Dashboard = () => {
     donorRequests,
     donationCount,
     nextEligibleDate,
+    loading: dataLoading,
     refreshData
   } = useDashboardData();
   
@@ -85,13 +85,30 @@ const Dashboard = () => {
     }
   };
 
-  // Add loading state check
-  if (!user) {
+  // Show loading state while auth or data is loading
+  if (authLoading || dataLoading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Navbar />
+        {/* Navbar is now globally rendered in App */}
         <main className="flex-grow bg-gray-50 flex items-center justify-center">
-          <div>Loading...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blood mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Redirect to auth if not authenticated
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        {/* Navbar is now globally rendered in App */}
+        <main className="flex-grow bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Please sign in to access your dashboard.</p>
+          </div>
         </main>
       </div>
     );
@@ -112,7 +129,7 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      {/* Navbar is now globally rendered in App */}
       <main className="flex-grow bg-gray-50">
         <div className="container mx-auto py-8 px-4">
           <DashboardHeader 
