@@ -67,21 +67,31 @@ const EligibilityForm = () => {
       }
 
       try {
+        console.log('Checking existing donor for user:', user.id);
+        
         const { data, error } = await supabase
           .from('donors')
           .select('id, name, email')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         
-        if (data && !error) {
-          setExistingDonor(true);
-          setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
-        } else if (error && error.code !== 'PGRST116') {
+        console.log('Donor check result:', { data, error });
+        
+        if (error && error.code !== 'PGRST116') {
           // PGRST116 is "not found" error, which is expected if user hasn't registered
           console.error('Error checking existing donor:', error);
+          setSubmitError("Unable to check your registration status. Please try again.");
+        } else if (data) {
+          console.log('User already registered as donor:', data);
+          setExistingDonor(true);
+          setSubmitError("You have already registered as a blood donor. Each user can only register once as a donor.");
+        } else {
+          console.log('User not yet registered as donor');
+          setExistingDonor(false);
         }
       } catch (error) {
         console.error('Error checking existing donor:', error);
+        setSubmitError("Unable to check your registration status. Please try again.");
       } finally {
         setCheckingExistingDonor(false);
       }
@@ -89,6 +99,13 @@ const EligibilityForm = () => {
     
     checkExistingDonor();
   }, [user, isAuthenticated]);
+  
+  // Auto-fetch location on component mount
+  useEffect(() => {
+    if (!existingDonor && isAuthenticated) {
+      getCurrentLocation();
+    }
+  }, [existingDonor, isAuthenticated]);
   
   const getCurrentLocation = () => {
     setLocationLoading(true);
@@ -130,11 +147,6 @@ const EligibilityForm = () => {
     );
   };
 
-  // Auto-fetch location on component mount
-  useEffect(() => {
-    getCurrentLocation();
-  }, []);
-  
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -171,7 +183,7 @@ const EligibilityForm = () => {
     }
     
     if (existingDonor) {
-      setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+      setSubmitError("You have already registered as a blood donor. Each user can only register once as a donor.");
       return;
     }
     
@@ -196,11 +208,18 @@ const EligibilityForm = () => {
     setIsLoading(true);
     
     try {
+      console.log('Attempting to register donor for user:', user.id);
+      
       // Double-check if user already exists before inserting
-      const { data: existingData } = await supabase.from('donors').select('id').eq('user_id', user.id).single();
+      const { data: existingData } = await supabase
+        .from('donors')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
       
       if (existingData) {
-        setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+        console.log('User already registered during submission:', existingData);
+        setSubmitError("You have already registered as a blood donor. Each user can only register once as a donor.");
         setExistingDonor(true);
         setIsLoading(false);
         return;
@@ -229,8 +248,9 @@ const EligibilityForm = () => {
         ]);
       
       if (error) {
+        console.error('Error inserting donor:', error);
         if (error.code === '23505') {
-          setSubmitError("You have already registered as a donor. Only one registration per user is allowed.");
+          setSubmitError("You have already registered as a blood donor. Each user can only register once as a donor.");
           setExistingDonor(true);
         } else {
           throw error;
@@ -239,6 +259,7 @@ const EligibilityForm = () => {
         return;
       }
       
+      console.log('Donor registration successful');
       setSuccessMessage("Congratulations! You have been successfully registered as a blood donor. Thank you for joining our life-saving community.");
       setExistingDonor(true);
       
@@ -247,6 +268,7 @@ const EligibilityForm = () => {
         navigate("/donate");
       }, 3000);
     } catch (error: any) {
+      console.error('Error during donor registration:', error);
       setSubmitError(error.message || "There was an error registering you as a donor. Please try again.");
     } finally {
       setIsLoading(false);
@@ -346,14 +368,38 @@ const EligibilityForm = () => {
             {existingDonor ? (
               <CardContent className="space-y-6">
                 <div className="text-center py-8">
-                  <p className="text-lg mb-4">Thank you for being a registered donor!</p>
-                  <p className="text-gray-600 mb-6">You can manage your donor profile and view requests in your dashboard.</p>
-                  <Button 
-                    onClick={() => navigate("/dashboard")}
-                    className="bg-blood hover:bg-blood-600"
-                  >
-                    Go to Dashboard
-                  </Button>
+                  <div className="mb-6">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🩸</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Already Registered</h3>
+                    <p className="text-gray-600 mb-4">
+                      You are already registered as a blood donor in our system. Each user can only register once as a donor.
+                    </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <p className="text-sm text-blue-800">
+                        <strong>Why only one registration?</strong><br/>
+                        To maintain the integrity of our donor database and prevent duplicate entries, 
+                        we allow only one donor registration per user account.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => navigate("/dashboard")}
+                      className="bg-red-600 hover:bg-red-700 w-full"
+                    >
+                      Go to Dashboard
+                    </Button>
+                    <Button 
+                      onClick={() => navigate("/donate")}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Back to Donate Page
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             ) : (
