@@ -67,7 +67,7 @@ export type Database = {
           donor_id: string
           id: string
           recipient_name: string
-          request_id: string
+          request_id: string | null
           status: string
         }
         Insert: {
@@ -77,7 +77,7 @@ export type Database = {
           donor_id: string
           id?: string
           recipient_name: string
-          request_id: string
+          request_id?: string | null
           status?: string
         }
         Update: {
@@ -87,7 +87,7 @@ export type Database = {
           donor_id?: string
           id?: string
           recipient_name?: string
-          request_id?: string
+          request_id?: string | null
           status?: string
         }
         Relationships: [

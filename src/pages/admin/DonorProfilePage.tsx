@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Donor } from "@/types/custom";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { format } from "date-fns";
-import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import AddDonationConfirmDialog from "@/components/admin/AddDonationConfirmDialog";
 
@@ -57,7 +56,6 @@ const DonorProfilePage = () => {
       
     } catch (e) {
       console.error("Failed to load profile", e);
-      toast.error("Failed to load donor profile: " + (e as Error).message);
     }
     setLoading(false);
   };
@@ -83,11 +81,10 @@ const DonorProfilePage = () => {
     setShowConfirmDialog(true);
   };
 
-  // Add new donation with comprehensive error handling
+  // Add new donation with error handling, no toast
   const handleConfirmAddDonation = async () => {
     if (!donor) {
       console.error("No donor data available");
-      toast.error("No donor data available");
       return;
     }
 
@@ -115,7 +112,7 @@ const DonorProfilePage = () => {
       // Prepare donation data
       const donationData = {
         donor_id: donor.id,
-        request_id: null,
+        request_id: null, // Explicitly set null now allowed by updated DB
         recipient_name: donor.name,
         blood_type: donor.blood_type,
         city: donor.city,
@@ -138,7 +135,6 @@ const DonorProfilePage = () => {
       }
 
       console.log("Donation successfully inserted:", newDonation);
-      toast.success("Donation added successfully!");
 
       // Refresh the profile data immediately
       await fetchProfile();
@@ -159,7 +155,6 @@ const DonorProfilePage = () => {
 
     } catch (error: any) {
       console.error("Error in donation addition process:", error);
-      toast.error(error.message || "Failed to add donation. Please try again.");
     } finally {
       setAddLoading(false);
       setShowConfirmDialog(false);
@@ -184,7 +179,6 @@ const DonorProfilePage = () => {
       }
       
       console.log("Donations reset successfully");
-      toast.success("All donations reset for this donor");
       
       // Refresh data
       await fetchProfile();
@@ -196,7 +190,6 @@ const DonorProfilePage = () => {
       
     } catch (e) {
       console.error("Error resetting donations:", e);
-      toast.error("Error resetting donations: " + (e as Error).message);
     }
   };
 
@@ -301,3 +294,4 @@ const DonorProfilePage = () => {
 };
 
 export default DonorProfilePage;
+
