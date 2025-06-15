@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,10 +16,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center">
           <Link to="/" className="flex items-center">
-            <div className="h-8 w-5 mr-2 relative">
-              <div className="absolute inset-0 bg-blood rounded-full"></div>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-blood"></div>
-            </div>
+            <div className="h-8 w-8 rounded-full bg-blood mr-2 animate-pulse-blood"></div>
             <h1 className="text-2xl font-bold text-blood">
               One<span className="text-gray-800">Drop</span>
             </h1>
