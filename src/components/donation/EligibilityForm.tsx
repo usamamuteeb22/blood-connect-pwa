@@ -261,7 +261,6 @@ const EligibilityForm = () => {
   if (checkingExistingDonor) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Navbar />
         <main className="flex-grow bg-gray-50 py-16 px-4">
           <div className="container mx-auto max-w-2xl">
             <Card>
@@ -279,7 +278,6 @@ const EligibilityForm = () => {
   
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
       <main className="flex-grow bg-gray-50 py-16 px-4">
         <div className="container mx-auto max-w-2xl">
           <Card>
