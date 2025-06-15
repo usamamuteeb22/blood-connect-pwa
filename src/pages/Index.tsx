@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
@@ -100,11 +99,12 @@ const Index = () => {
               Join thousands of donors who are saving lives every day. Register now to become a part of our life-saving community.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/auth?mode=signup">
-                <Button className="bg-white text-blood hover:bg-gray-100 px-8 py-6 text-lg">
-                  Register as Donor
-                </Button>
-              </Link>
+              <Button 
+                className="bg-white text-blood hover:bg-gray-100 px-8 py-6 text-lg"
+                onClick={() => navigate('/donate')}
+              >
+                Register as Donor
+              </Button>
               <Button 
                 variant="outline" 
                 className="bg-white text-blood hover:bg-gray-100 px-8 py-6 text-lg"
