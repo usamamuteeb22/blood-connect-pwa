@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { LayoutDashboard, Search, ListOrdered, Heart, List, Map } from "lucide-react";
@@ -43,15 +42,22 @@ const DashboardContainer = () => {
   useEffect(() => {
     const newContent: Record<string, number> = {};
     
-    // Check for new requests (assuming newer requests have higher counts)
-    if (userRequests.length > 0) {
-      newContent.requests = userRequests.filter(req => req.status === 'approved').length;
+    // Count pending requests for "My Requests" tab
+    const pendingRequestsCount = userRequests.filter(req => req.status === 'pending').length;
+    if (pendingRequestsCount > 0) {
+      newContent.requests = pendingRequestsCount;
     }
     
     // Check for pending donor requests
     if (donorRequests.length > 0) {
       newContent['donor-requests'] = donorRequests.length;
     }
+
+    console.log('Badge counts:', {
+      'My Requests (pending)': pendingRequestsCount,
+      'Donor Requests (pending)': donorRequests.length,
+      'Total user requests': userRequests.length
+    });
 
     setNewContentTabs(newContent);
   }, [userRequests, donorRequests]);
