@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +26,7 @@ const AdminPanelLayout = () => {
   const [donorsLoading, setDonorsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState({ field: "", value: "" });
   const [locationQuery, setLocationQuery] = useState({ city: "", address: "" });
+  const [bloodGroupFilter, setBloodGroupFilter] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [exportAllLoading, setExportAllLoading] = useState(false);
 
@@ -79,7 +81,7 @@ const AdminPanelLayout = () => {
     // eslint-disable-next-line
   }, [user, isAdmin, loading]);
 
-  // Filtering logic: advanced search & location-based, both must combine
+  // Filtering logic: advanced search & location-based & blood group, all must combine
   useEffect(() => {
     let filtered = donors;
 
@@ -100,8 +102,14 @@ const AdminPanelLayout = () => {
         donor.address?.toLowerCase().includes(locationQuery.address.toLowerCase())
       );
     }
+    // Blood group filter
+    if (bloodGroupFilter) {
+      filtered = filtered.filter(donor =>
+        donor.blood_type === bloodGroupFilter
+      );
+    }
     setFilteredDonors(filtered);
-  }, [donors, searchQuery, locationQuery]);
+  }, [donors, searchQuery, locationQuery, bloodGroupFilter]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -174,6 +182,8 @@ const AdminPanelLayout = () => {
               setSearchQuery={setSearchQuery}
               locationQuery={locationQuery}
               setLocationQuery={setLocationQuery}
+              bloodGroupFilter={bloodGroupFilter}
+              setBloodGroupFilter={setBloodGroupFilter}
             />
 
             {/* Results Info + CSV export */}
