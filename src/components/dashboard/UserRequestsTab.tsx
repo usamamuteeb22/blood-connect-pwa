@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { CircleCheck, CircleX, Clock, BadgeAlert } from "lucide-react";
-import { BloodRequest } from "@/types/custom";
+import { CircleCheck, CircleX, Clock, BadgeAlert, Phone, Calendar, MapPin, AlertCircle } from "lucide-react";
+import { BloodRequestWithDonor } from "@/types/custom";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // Helper function: format time since creation
 const getTimeAgo = (dateString: string) => {
@@ -27,7 +28,7 @@ const statusMeta = {
   pending: {
     label: "Pending",
     color: "bg-amber-100 text-amber-800",
-    desc: "Waiting for donor action or admin approval.",
+    desc: "Waiting for donor response.",
     icon: <Clock className="w-4 h-4 mr-1 inline" />,
     next: "You may cancel if needed.",
   },
@@ -36,26 +37,43 @@ const statusMeta = {
     color: "bg-green-100 text-green-800",
     desc: "Your request was approved by the donor.",
     icon: <CircleCheck className="w-4 h-4 mr-1 inline" />,
-    next: "You should contact the donor to proceed.",
+    next: "Contact the donor to coordinate donation.",
   },
   rejected: {
     label: "Rejected",
     color: "bg-red-100 text-red-800",
     desc: "Request was declined by the donor.",
     icon: <CircleX className="w-4 h-4 mr-1 inline" />,
-    next: "You can create a new request or try another donor.",
+    next: "You can create a new request.",
   },
   completed: {
     label: "Completed",
     color: "bg-blue-50 text-blue-800",
-    desc: "Request marked as fulfilled.",
+    desc: "Request has been fulfilled.",
     icon: <CircleCheck className="w-4 h-4 mr-1 inline" />,
     next: "Thank you for using our platform!",
   },
 };
 
+// Helper: urgency level badge
+const getUrgencyBadge = (urgency: string) => {
+  const urgencyColors = {
+    low: "bg-gray-100 text-gray-800",
+    normal: "bg-blue-100 text-blue-800",
+    high: "bg-orange-100 text-orange-800",
+    critical: "bg-red-100 text-red-800"
+  };
+  
+  return (
+    <Badge variant="outline" className={`${urgencyColors[urgency as keyof typeof urgencyColors]} flex items-center gap-1`}>
+      {urgency === 'critical' && <AlertCircle className="w-3 h-3" />}
+      {urgency.charAt(0).toUpperCase() + urgency.slice(1)}
+    </Badge>
+  );
+};
+
 // Helper: request type
-const getRequestTypeBadge = (req: any) => {
+const getRequestTypeBadge = (req: BloodRequestWithDonor) => {
   return req.donor_name ? (
     <Badge variant="outline" className="border-cyan-700 text-cyan-900 bg-cyan-50 flex items-center gap-1">
       <BadgeAlert className="w-3 h-3" /> Direct Donor Request
@@ -67,25 +85,14 @@ const getRequestTypeBadge = (req: any) => {
   );
 };
 
-interface RequestWithDonor extends BloodRequest {
-  reason: string;
-  donor_name: string | null;
-  donor_phone: string | null;
-  donor_next_eligible_date?: string | null;
-  donor_is_eligible?: boolean | null;
-  updated_at?: string | null;
-}
-
 interface UserRequestsTabProps {
-  userRequests: BloodRequest[];
+  userRequests: any[];
 }
 
 const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<RequestWithDonor[]>([]);
+  const [requests, setRequests] = useState<BloodRequestWithDonor[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // For action UI feedback
   const [cancelingId, setCancelingId] = useState<string | null>(null);
 
   // Cancel handler
@@ -98,16 +105,30 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
         .eq("id", id)
         .eq("requester_id", user.id)
         .eq("status", "pending");
+      
       if (error) throw error;
-      // Refresh
+      
+      // Log activity
+      await supabase
+        .from('activity_logs')
+        .insert([{
+          user_id: user.id,
+          action: "blood_request_cancelled",
+          entity_type: "blood_request",
+          entity_id: id,
+          details: { cancelled_by: "requester" }
+        }]);
+      
       setRequests((reqs) =>
         reqs.map((req) =>
-          req.id === id ? { ...req, status: "rejected" } : req
+          req.id === id ? { ...req, status: "rejected" as const } : req
         )
       );
+      
+      toast.success("Request cancelled successfully.");
     } catch (err) {
       console.error("Cancel request failed:", err);
-      // Optionally: toast error
+      toast.error("Failed to cancel request. Please try again.");
     }
     setCancelingId(null);
   };
@@ -118,64 +139,20 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
 
       setLoading(true);
       try {
-        // Fetch all requests made by this user (regardless of status)
-        // Join donors table for donor_id if present (add donor_next_eligible_date)
+        // Use the new view for cleaner queries
         const { data, error } = await supabase
-          .from("blood_requests")
-          .select(`
-            id,
-            reason,
-            city,
-            address,
-            contact,
-            blood_type,
-            created_at,
-            status,
-            donor_id,
-            updated_at,
-            donors:donor_id (
-              name,
-              phone,
-              next_eligible_date,
-              is_eligible
-            )
-          `)
+          .from("blood_request_details")
+          .select("*")
           .eq("requester_id", user.id)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        // Get display name
-        const displayName =
-          (user.user_metadata &&
-            (user.user_metadata.full_name || user.user_metadata.name)) ||
-          user.email ||
-          "Unknown";
-
-        // Format data for UI
-        const formatted = (data || []).map((r: any) => ({
-          id: r.id,
-          reason: r.reason,
-          city: r.city,
-          address: r.address,
-          contact: r.contact,
-          blood_type: r.blood_type,
-          created_at: r.created_at,
-          updated_at: r.updated_at || r.created_at,
-          status: r.status as "pending" | "approved" | "rejected" | "completed",
-          donor_id: r.donor_id,
-          donor_name: r.donors?.name || null,
-          donor_phone: r.donors?.phone || null,
-          donor_next_eligible_date: r.donors?.next_eligible_date || null,
-          donor_is_eligible: typeof r.donors?.is_eligible === 'boolean' ? r.donors.is_eligible : null,
-          requester_id: user.id,
-          requester_name: displayName,
-        }));
-
-        setRequests(formatted);
+        setRequests(data || []);
       } catch (error) {
         console.error("Error fetching user requests:", error);
         setRequests([]);
+        toast.error("Failed to load your requests.");
       } finally {
         setLoading(false);
       }
@@ -224,7 +201,7 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                       {req.blood_type}
                     </div>
                     <div>
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-2 items-center flex-wrap">
                         <span className="font-medium text-base">
                           {meta.icon}
                           {meta.label}
@@ -232,6 +209,7 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                         <span className={`${meta.color} rounded px-2 py-0.5 text-xs font-semibold`}>
                           {meta.label}
                         </span>
+                        {getUrgencyBadge(req.urgency_level)}
                         {getRequestTypeBadge(req)}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -246,78 +224,109 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm mb-1">
                   <div>
                     <p className="text-gray-500 font-medium">Reason</p>
-                    <p>{req.reason ? req.reason : "N/A"}</p>
+                    <p className="break-words">{req.reason}</p>
                   </div>
+                  
                   <div>
-                    <p className="text-gray-500 font-medium">City</p>
+                    <p className="text-gray-500 font-medium flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      Location
+                    </p>
                     <p>{req.city}</p>
+                    <p className="text-xs text-gray-600">{req.address}</p>
                   </div>
+                  
                   <div>
-                    <p className="text-gray-500 font-medium">Contact</p>
+                    <p className="text-gray-500 font-medium flex items-center gap-1">
+                      <Phone className="w-3 h-3" />
+                      Contact
+                    </p>
                     <p>{req.contact}</p>
                   </div>
+
                   <div>
-                    <p className="text-gray-500 font-medium">Address</p>
-                    <p>{req.address}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-medium">Requested Donor</p>
-                    {req.donor_name ? (
-                      <Badge variant="outline" className="border-green-500 text-green-900 bg-green-50 flex gap-1">
-                        {req.donor_name}
-                      </Badge>
-                    ) : (
-                      <span className="text-gray-400">No specific donor (general request)</span>
-                    )}
+                    <p className="text-gray-500 font-medium">Units Needed</p>
+                    <p>{req.units_needed} unit{req.units_needed !== 1 ? 's' : ''}</p>
                   </div>
 
-                  {req.donor_phone && (
+                  {req.needed_by && (
                     <div>
-                      <p className="text-gray-500 font-medium">Donor Contact</p>
-                      <Badge variant="outline" className="border-green-500 text-green-900 bg-green-50">
-                        {req.donor_phone}
-                      </Badge>
+                      <p className="text-gray-500 font-medium flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Needed By
+                      </p>
+                      <p>{new Date(req.needed_by).toLocaleDateString()}</p>
                     </div>
                   )}
 
+                  {req.hospital_name && (
+                    <div>
+                      <p className="text-gray-500 font-medium">Hospital</p>
+                      <p className="text-xs">{req.hospital_name}</p>
+                    </div>
+                  )}
+
+                  {req.doctor_name && (
+                    <div>
+                      <p className="text-gray-500 font-medium">Doctor</p>
+                      <p className="text-xs">{req.doctor_name}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-gray-500 font-medium">Assigned Donor</p>
+                    {req.donor_name ? (
+                      <div className="space-y-1">
+                        <Badge variant="outline" className="border-green-500 text-green-900 bg-green-50">
+                          {req.donor_name}
+                        </Badge>
+                        {req.donor_phone && (
+                          <p className="text-xs text-gray-600">{req.donor_phone}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-xs">No specific donor assigned</span>
+                    )}
+                  </div>
+
                   {req.donor_next_eligible_date && (
                     <div>
-                      <p className="text-gray-500 font-medium">Donor Next Eligible</p>
+                      <p className="text-gray-500 font-medium">Donor Availability</p>
                       <span className="text-xs text-gray-600">
                         {
                           new Date(req.donor_next_eligible_date) <= new Date()
                             ? "Available Now"
-                            : `Available from ${new Date(
-                                req.donor_next_eligible_date
-                              ).toLocaleDateString()}`
+                            : `Available from ${new Date(req.donor_next_eligible_date).toLocaleDateString()}`
                         }
                       </span>
                     </div>
                   )}
-                  {typeof req.donor_is_eligible === 'boolean' && (
-                    <div>
-                      <p className="text-gray-500 font-medium">Donor Eligibility</p>
-                      <Badge
-                        variant="outline"
-                        className={req.donor_is_eligible ? "border-green-500 text-green-900 bg-green-50" : "border-red-500 text-red-900 bg-red-50"}
-                      >
-                        {req.donor_is_eligible ? "Eligible" : "Not Eligible"}
-                      </Badge>
-                    </div>
-                  )}
                 </div>
 
+                {req.additional_notes && (
+                  <div className="bg-gray-50 p-2 rounded text-sm">
+                    <p className="text-gray-500 font-medium text-xs">Additional Notes</p>
+                    <p className="text-gray-700">{req.additional_notes}</p>
+                  </div>
+                )}
+
                 {/* Timeline/History */}
-                <div className="text-xs text-muted-foreground pt-1">
+                <div className="text-xs text-muted-foreground pt-1 border-t">
                   <span>
-                    Requested: {new Date(req.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    Requested: {new Date(req.created_at).toLocaleDateString("en-US", { 
+                      year: "numeric", month: "short", day: "numeric", 
+                      hour: "2-digit", minute: "2-digit" 
+                    })}
                   </span>
                   {req.updated_at && req.updated_at !== req.created_at && (
                     <span className="ml-4">
-                      Last updated: {new Date(req.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      Last updated: {new Date(req.updated_at).toLocaleDateString("en-US", { 
+                        year: "numeric", month: "short", day: "numeric", 
+                        hour: "2-digit", minute: "2-digit" 
+                      })}
                     </span>
                   )}
                 </div>
@@ -331,6 +340,7 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                       rel="noopener noreferrer"
                     >
                       <Button size="sm" className="bg-green-600 hover:bg-green-800 text-white">
+                        <Phone className="w-4 h-4 mr-1" />
                         Contact Donor
                       </Button>
                     </a>
@@ -346,8 +356,6 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                       {cancelingId === req.id ? "Cancelling..." : "Cancel Request"}
                     </Button>
                   )}
-
-                  {/* Add more future actions here */}
                 </div>
 
                 {/* Next Step Feedback */}
@@ -364,4 +372,3 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
 };
 
 export default UserRequestsTab;
-

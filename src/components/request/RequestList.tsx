@@ -4,20 +4,27 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import RequestCard from "./RequestCard";
+import { BloodRequestWithDonor } from "@/types/custom";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Clock, MapPin } from "lucide-react";
 
 const RequestList = () => {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState([]);
+  const [requests, setRequests] = useState<BloodRequestWithDonor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("all");
 
   // Fetch all blood requests
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         setLoading(true);
+        
+        // Use the view for better performance
         const { data, error } = await supabase
-          .from('blood_requests')
+          .from('blood_request_details')
           .select('*')
+          .eq('status', 'pending')
           .order('created_at', { ascending: false });
           
         if (error) throw error;
@@ -35,26 +42,163 @@ const RequestList = () => {
     fetchRequests();
   }, []);
 
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'normal': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const filteredRequests = requests.filter(request => {
+    if (filter === "all") return true;
+    if (filter === "critical") return request.urgency_level === 'critical';
+    if (filter === "today") {
+      const today = new Date().toISOString().split('T')[0];
+      return request.needed_by === today;
+    }
+    return request.blood_type === filter;
+  });
+
+  const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
   return (
     <section className="py-16 px-4">
-      <div className="container mx-auto max-w-4xl">
-        <h2 className="text-2xl font-bold mb-6">Active Blood Requests</h2>
+      <div className="container mx-auto max-w-6xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Active Blood Requests</h2>
+            <p className="text-gray-600">Help save lives by responding to these urgent requests</p>
+          </div>
+          
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={filter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter("all")}
+            >
+              All Requests
+            </Button>
+            <Button
+              variant={filter === "critical" ? "destructive" : "outline"}
+              size="sm"
+              onClick={() => setFilter("critical")}
+            >
+              <AlertCircle className="w-4 h-4 mr-1" />
+              Critical
+            </Button>
+            <Button
+              variant={filter === "today" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter("today")}
+            >
+              <Clock className="w-4 h-4 mr-1" />
+              Needed Today
+            </Button>
+            {bloodTypes.map(type => (
+              <Button
+                key={type}
+                variant={filter === type ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter(type)}
+                className="min-w-[50px]"
+              >
+                {type}
+              </Button>
+            ))}
+          </div>
+        </div>
         
         {loading ? (
           <div className="text-center py-12">
             <p className="text-gray-500">Loading requests...</p>
           </div>
-        ) : requests.length > 0 ? (
-          <div className="space-y-4">
-            {requests.map((request) => (
-              <RequestCard key={request.id} request={request} />
+        ) : filteredRequests.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredRequests.map((request) => (
+              <div key={request.id} className={`p-6 rounded-lg border-2 transition-all hover:shadow-lg ${getUrgencyColor(request.urgency_level)}`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      {request.blood_type}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">{request.requester_name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className={`${getUrgencyColor(request.urgency_level)} text-xs`}>
+                          {request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1)}
+                        </Badge>
+                        {request.urgency_level === 'critical' && (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <MapPin className="w-4 h-4" />
+                    <span>{request.city}</span>
+                  </div>
+                  
+                  <div className="text-sm">
+                    <span className="font-medium">Reason: </span>
+                    <span className="text-gray-700">{request.reason}</span>
+                  </div>
+
+                  <div className="text-sm">
+                    <span className="font-medium">Units needed: </span>
+                    <span className="text-gray-700">{request.units_needed}</span>
+                  </div>
+
+                  {request.needed_by && (
+                    <div className="text-sm">
+                      <span className="font-medium">Needed by: </span>
+                      <span className="text-gray-700">{new Date(request.needed_by).toLocaleDateString()}</span>
+                    </div>
+                  )}
+
+                  {request.hospital_name && (
+                    <div className="text-sm">
+                      <span className="font-medium">Hospital: </span>
+                      <span className="text-gray-700">{request.hospital_name}</span>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-gray-500">
+                    Posted {new Date(request.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1 bg-red-600 hover:bg-red-700"
+                    onClick={() => navigate('/dashboard', { state: { openRequestDialog: request } })}
+                  >
+                    Respond to Request
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`tel:${request.contact}`, '_blank')}
+                  >
+                    Call
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500">No blood requests found.</p>
+            <p className="text-gray-500 mb-4">
+              {filter === "all" ? "No blood requests found." : `No ${filter} requests found.`}
+            </p>
             <Button 
-              className="mt-4 bg-blood hover:bg-blood-600"
+              className="bg-blood hover:bg-blood-600"
               onClick={() => navigate('/donate', { state: { activeTab: 'request' } })}
             >
               Create a Request

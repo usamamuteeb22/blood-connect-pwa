@@ -46,10 +46,10 @@ const DonorCard: React.FC<DonorCardProps> = ({ donor, onSelect, distance }) => {
           </div>
           <div className="text-right">
             <Badge 
-              variant={donor.is_eligible ? "default" : "secondary"}
-              className={donor.is_eligible ? "bg-green-600" : ""}
+              variant={donor.is_eligible && donor.availability ? "default" : "secondary"}
+              className={donor.is_eligible && donor.availability ? "bg-green-600" : ""}
             >
-              {donor.is_eligible ? 'Available' : 'Not Available'}
+              {donor.is_eligible && donor.availability ? 'Available' : 'Not Available'}
             </Badge>
             {distance && (
               <div className="text-xs text-gray-500 mt-1">
@@ -76,13 +76,13 @@ const DonorCard: React.FC<DonorCardProps> = ({ donor, onSelect, distance }) => {
         
         <Button 
           className="w-full mt-4 bg-red-600 hover:bg-red-700"
-          disabled={!donor.is_eligible}
+          disabled={!donor.is_eligible || !donor.availability}
           onClick={e => {
             e.stopPropagation();
             onSelect(donor);
           }}
         >
-          {donor.is_eligible ? 'Request Blood' : 'Not Available'}
+          {donor.is_eligible && donor.availability ? 'Request Blood' : 'Not Available'}
         </Button>
       </CardContent>
     </Card>

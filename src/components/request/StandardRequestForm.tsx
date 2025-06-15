@@ -10,58 +10,52 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 const StandardRequestForm = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [bloodType, setBloodType] = useState<string>("");
-  const [city, setCity] = useState<string>("");
-  const [address, setAddress] = useState<string>("");
-  const [reason, setReason] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    contact: "",
+    bloodType: "",
+    city: "",
+    address: "",
+    reason: "",
+    urgencyLevel: "normal" as "low" | "normal" | "high" | "critical",
+    unitsNeeded: 1,
+    neededBy: "",
+    hospitalName: "",
+    doctorName: "",
+    additionalNotes: ""
+  });
+  
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  const urgencyLevels = [
+    { value: "low", label: "Low" },
+    { value: "normal", label: "Normal" },
+    { value: "high", label: "High" },
+    { value: "critical", label: "Critical" }
+  ];
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // Validate name
-    if (!name.trim()) {
-      newErrors.name = "Full name is required";
-    }
-    
-    // Validate contact
-    if (!contact.trim()) {
+    if (!formData.name.trim()) newErrors.name = "Full name is required";
+    if (!formData.contact.trim()) {
       newErrors.contact = "Contact number is required";
-    } else if (!/^\d{10,}$/.test(contact.replace(/[^\d]/g, ''))) {
+    } else if (!/^\d{10,}$/.test(formData.contact.replace(/[^\d]/g, ''))) {
       newErrors.contact = "Please enter a valid contact number (at least 10 digits)";
     }
-    
-    // Validate blood type
-    if (!bloodType) {
-      newErrors.bloodType = "Blood type is required";
-    }
-    
-    // Validate city
-    if (!city.trim()) {
-      newErrors.city = "City is required";
-    }
-    
-    // Validate address
-    if (!address.trim()) {
-      newErrors.address = "Complete address is required";
-    }
-
-    // Validate reason
-    if (!reason.trim()) {
-      newErrors.reason = "Reason for request is required";
-    }
+    if (!formData.bloodType) newErrors.bloodType = "Blood type is required";
+    if (!formData.city.trim()) newErrors.city = "City is required";
+    if (!formData.address.trim()) newErrors.address = "Complete address is required";
+    if (!formData.reason.trim()) newErrors.reason = "Reason for request is required";
+    if (formData.unitsNeeded < 1) newErrors.unitsNeeded = "Units needed must be at least 1";
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -69,60 +63,109 @@ const StandardRequestForm = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitError("");
-    setSuccessMessage("");
     
     if (!isAuthenticated) {
-      setSubmitError("Please sign in to submit a blood request.");
+      toast.error("Please sign in to submit a blood request.");
       return;
     }
     
     if (!validateForm()) {
-      setSubmitError("Please correct the highlighted errors to continue.");
+      toast.error("Please correct the highlighted errors to continue.");
       return;
     }
     
     setIsLoading(true);
     
     try {
-      // Find donors matching the requested blood type
+      // Find donors matching the requested blood type and city
       const { data: donors } = await supabase
         .from('donors')
-        .select('id')
-        .eq('blood_type', bloodType)
-        .eq('city', city);
+        .select('id, name')
+        .eq('blood_type', formData.bloodType)
+        .eq('city', formData.city)
+        .eq('is_eligible', true)
+        .limit(1);
       
-      // Get the first donor (in a real app, you'd show a list to choose from)
+      // Get the first available donor
       const donorId = donors && donors.length > 0 ? donors[0].id : null;
       
-      // Create the blood request
+      // Create the blood request with all new fields
+      const requestData = {
+        requester_id: user!.id,
+        donor_id: donorId,
+        requester_name: formData.name,
+        blood_type: formData.bloodType,
+        reason: formData.reason,
+        city: formData.city,
+        address: formData.address,
+        contact: formData.contact,
+        status: "pending" as const,
+        urgency_level: formData.urgencyLevel,
+        units_needed: formData.unitsNeeded,
+        needed_by: formData.neededBy || null,
+        hospital_name: formData.hospitalName || null,
+        doctor_name: formData.doctorName || null,
+        additional_notes: formData.additionalNotes || null
+      };
+      
       const { error } = await supabase
         .from('blood_requests')
-        .insert([
-          {
-            requester_id: user!.id,
-            donor_id: donorId,
-            requester_name: name,
-            blood_type: bloodType,
-            city,
-            address,
-            contact,
-            reason,
-            status: "pending"
-          }
-        ]);
+        .insert([requestData]);
       
       if (error) throw error;
       
-      setSuccessMessage("Your blood request has been successfully submitted.");
+      // Create notification for the donor if one was found
+      if (donorId) {
+        const { data: donorUser } = await supabase
+          .from('donors')
+          .select('user_id, name')
+          .eq('id', donorId)
+          .single();
+          
+        if (donorUser) {
+          await supabase
+            .from('notifications')
+            .insert([{
+              user_id: donorUser.user_id,
+              type: "request_received",
+              title: "New Blood Request",
+              message: `You have received a new ${formData.bloodType} blood request from ${formData.name} in ${formData.city}.`,
+              related_type: "blood_request"
+            }]);
+        }
+      }
+      
+      // Log activity
+      await supabase
+        .from('activity_logs')
+        .insert([{
+          user_id: user!.id,
+          action: "blood_request_created",
+          entity_type: "blood_request",
+          details: {
+            blood_type: formData.bloodType,
+            city: formData.city,
+            urgency_level: formData.urgencyLevel
+          }
+        }]);
+      
+      toast.success("Your blood request has been successfully submitted.");
       
       // Clear form
-      setName("");
-      setContact("");
-      setBloodType("");
-      setCity("");
-      setAddress("");
-      setReason("");
+      setFormData({
+        name: "",
+        contact: "",
+        bloodType: "",
+        city: "",
+        address: "",
+        reason: "",
+        urgencyLevel: "normal",
+        unitsNeeded: 1,
+        neededBy: "",
+        hospitalName: "",
+        doctorName: "",
+        additionalNotes: ""
+      });
       setErrors({});
       
       // Navigate to dashboard after a short delay
@@ -131,9 +174,17 @@ const StandardRequestForm = () => {
       }, 2000);
       
     } catch (error: any) {
-      setSubmitError(error.message || "There was a problem submitting your request.");
+      console.error("Error submitting request:", error);
+      toast.error(error.message || "There was a problem submitting your request.");
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
     }
   };
   
@@ -143,63 +194,103 @@ const StandardRequestForm = () => {
         <CardTitle>Standard Blood Request</CardTitle>
       </CardHeader>
       
-      {submitError && (
-        <div className="px-6">
-          <Alert variant="destructive">
-            <AlertDescription>{submitError}</AlertDescription>
-          </Alert>
-        </div>
-      )}
-      
-      {successMessage && (
-        <div className="px-6">
-          <Alert>
-            <AlertDescription>{successMessage}</AlertDescription>
-          </Alert>
-        </div>
-      )}
-      
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
-          <div className="space-y-1.5">
-            <Label htmlFor="name" className={errors.name ? "text-destructive" : ""}>Full Name *</Label>
-            <Input
-              id="name"
-              placeholder="Your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className={errors.name ? "border-destructive" : ""}
-            />
-            {errors.name && <p className="text-sm font-medium text-destructive">{errors.name}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className={errors.name ? "text-destructive" : ""}>Full Name *</Label>
+              <Input
+                id="name"
+                placeholder="Your name"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                required
+                className={errors.name ? "border-destructive" : ""}
+              />
+              {errors.name && <p className="text-sm font-medium text-destructive">{errors.name}</p>}
+            </div>
+            
+            <div className="space-y-1.5">
+              <Label htmlFor="contact" className={errors.contact ? "text-destructive" : ""}>Contact Number *</Label>
+              <Input
+                id="contact"
+                placeholder="Your phone number"
+                value={formData.contact}
+                onChange={(e) => handleInputChange("contact", e.target.value)}
+                required
+                className={errors.contact ? "border-destructive" : ""}
+              />
+              {errors.contact && <p className="text-sm font-medium text-destructive">{errors.contact}</p>}
+            </div>
           </div>
-          
-          <div className="space-y-1.5">
-            <Label htmlFor="contact" className={errors.contact ? "text-destructive" : ""}>Contact Number *</Label>
-            <Input
-              id="contact"
-              placeholder="Your phone number"
-              value={contact}
-              onChange={(e) => setContact(e.target.value)}
-              required
-              className={errors.contact ? "border-destructive" : ""}
-            />
-            {errors.contact && <p className="text-sm font-medium text-destructive">{errors.contact}</p>}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-1.5">
+              <Label htmlFor="bloodType" className={errors.bloodType ? "text-destructive" : ""}>Blood Type Required *</Label>
+              <Select value={formData.bloodType} onValueChange={(value) => handleInputChange("bloodType", value)} required>
+                <SelectTrigger id="bloodType" className={errors.bloodType ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select blood type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bloodTypes.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.bloodType && <p className="text-sm font-medium text-destructive">{errors.bloodType}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="urgencyLevel">Urgency Level</Label>
+              <Select value={formData.urgencyLevel} onValueChange={(value: any) => handleInputChange("urgencyLevel", value)}>
+                <SelectTrigger id="urgencyLevel">
+                  <SelectValue placeholder="Select urgency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {urgencyLevels.map(level => (
+                    <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div className="space-y-1.5">
-            <Label htmlFor="bloodType" className={errors.bloodType ? "text-destructive" : ""}>Blood Type Required *</Label>
-            <Select value={bloodType} onValueChange={setBloodType} required>
-              <SelectTrigger id="bloodType" className={errors.bloodType ? "border-destructive" : ""}>
-                <SelectValue placeholder="Select blood type" />
-              </SelectTrigger>
-              <SelectContent>
-                {bloodTypes.map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.bloodType && <p className="text-sm font-medium text-destructive">{errors.bloodType}</p>}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1.5">
+              <Label htmlFor="unitsNeeded">Units Needed</Label>
+              <Input
+                id="unitsNeeded"
+                type="number"
+                min="1"
+                value={formData.unitsNeeded}
+                onChange={(e) => handleInputChange("unitsNeeded", parseInt(e.target.value) || 1)}
+                className={errors.unitsNeeded ? "border-destructive" : ""}
+              />
+              {errors.unitsNeeded && <p className="text-sm font-medium text-destructive">{errors.unitsNeeded}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="neededBy">Needed By (Optional)</Label>
+              <Input
+                id="neededBy"
+                type="date"
+                value={formData.neededBy}
+                onChange={(e) => handleInputChange("neededBy", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="city" className={errors.city ? "text-destructive" : ""}>City *</Label>
+              <Input
+                id="city"
+                placeholder="City where blood is needed"
+                value={formData.city}
+                onChange={(e) => handleInputChange("city", e.target.value)}
+                required
+                className={errors.city ? "border-destructive" : ""}
+              />
+              {errors.city && <p className="text-sm font-medium text-destructive">{errors.city}</p>}
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -207,8 +298,8 @@ const StandardRequestForm = () => {
             <Textarea
               id="reason"
               placeholder="Please provide the reason for your blood request"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              value={formData.reason}
+              onChange={(e) => handleInputChange("reason", e.target.value)}
               required
               className={errors.reason ? "border-destructive" : ""}
             />
@@ -216,31 +307,51 @@ const StandardRequestForm = () => {
           </div>
           
           <div className="space-y-1.5">
-            <Label htmlFor="city" className={errors.city ? "text-destructive" : ""}>City *</Label>
-            <Input
-              id="city"
-              placeholder="City where blood is needed"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              required
-              className={errors.city ? "border-destructive" : ""}
-            />
-            {errors.city && <p className="text-sm font-medium text-destructive">{errors.city}</p>}
-          </div>
-          
-          <div className="space-y-1.5">
             <Label htmlFor="address" className={errors.address ? "text-destructive" : ""}>Full Address *</Label>
             <Input
               id="address"
               placeholder="Complete address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
               required
               className={errors.address ? "border-destructive" : ""}
             />
             {errors.address && <p className="text-sm font-medium text-destructive">{errors.address}</p>}
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-1.5">
+              <Label htmlFor="hospitalName">Hospital Name (Optional)</Label>
+              <Input
+                id="hospitalName"
+                placeholder="Hospital or medical facility"
+                value={formData.hospitalName}
+                onChange={(e) => handleInputChange("hospitalName", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="doctorName">Doctor Name (Optional)</Label>
+              <Input
+                id="doctorName"
+                placeholder="Attending physician"
+                value={formData.doctorName}
+                onChange={(e) => handleInputChange("doctorName", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="additionalNotes">Additional Notes (Optional)</Label>
+            <Textarea
+              id="additionalNotes"
+              placeholder="Any additional information or special requirements"
+              value={formData.additionalNotes}
+              onChange={(e) => handleInputChange("additionalNotes", e.target.value)}
+            />
+          </div>
         </CardContent>
+        
         <CardFooter>
           <Button 
             type="submit" 
