@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import AddDonationConfirmDialog from "@/components/admin/AddDonationConfirmDialog";
 
 const DonorProfilePage = () => {
   const { id } = useParams();
@@ -16,6 +18,8 @@ const DonorProfilePage = () => {
   const [donations, setDonations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [addLoading, setAddLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [donationCount, setDonationCount] = useState(0);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -33,6 +37,7 @@ const DonorProfilePage = () => {
         .eq('donor_id', id)
         .order('date', { ascending: false });
       setDonations(dn.data || []);
+      setDonationCount(dn.data?.length || 0);
     } catch (e) {
       console.error("Failed to load profile", e);
     }
@@ -52,8 +57,13 @@ const DonorProfilePage = () => {
     }
   };
 
+  // Show confirmation dialog
+  const handleAddDonationClick = () => {
+    setShowConfirmDialog(true);
+  };
+
   // Add new donation (with current date and time)
-  const handleAddDonation = async () => {
+  const handleConfirmAddDonation = async () => {
     if (!donor) return;
     setAddLoading(true);
     try {
@@ -65,7 +75,7 @@ const DonorProfilePage = () => {
         .insert([{
           donor_id: donor.id,
           request_id: null, // Most manual entries will not be tied to a blood request
-          recipient_name: 'Manual Entry',
+          recipient_name: donor.name, // Changed from 'Manual Entry' to donor name
           blood_type: donor.blood_type,
           city: donor.city,
           date: date,
@@ -76,6 +86,7 @@ const DonorProfilePage = () => {
         toast.error("Error adding donation. Check your Supabase security/RLS policies: " + error.message);
       } else {
         toast.success("Donation added successfully!");
+        setDonationCount(prev => prev + 1);
         fetchProfile();
       }
     } catch (e) {
@@ -83,6 +94,7 @@ const DonorProfilePage = () => {
       console.error(e);
     }
     setAddLoading(false);
+    setShowConfirmDialog(false);
   };
 
   if (loading) return <div>Loading profile...</div>;
@@ -103,13 +115,14 @@ const DonorProfilePage = () => {
         <div className="text-sm">City: {donor.city}</div>
         <div className="text-sm">Address: {donor.address}</div>
         <div className="text-sm">Blood Group: {donor.blood_type}</div>
+        <div className="text-sm">Total Donations: {donationCount}</div>
         <div className="flex gap-2 mt-2">
           <Button
-            onClick={handleAddDonation}
+            onClick={handleAddDonationClick}
             className="bg-blood text-white"
             disabled={addLoading}
           >
-            {addLoading ? "Adding..." : "Add Donation"}
+            Add Donation
           </Button>
           <Button
             variant="outline"
@@ -126,14 +139,14 @@ const DonorProfilePage = () => {
       <Card>
         <CardContent>
           <div className="py-2 font-semibold">
-            Donation History ({donations.length} total)
+            Donation History ({donationCount} total)
           </div>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Recipient</TableHead>
-                <TableHead>Blood Type</TableHead>
+                <TableHead>Donor</TableHead>
+                <TableHead>Blood Group</TableHead>
                 <TableHead>City</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
@@ -145,13 +158,21 @@ const DonorProfilePage = () => {
                   <TableCell>{d.recipient_name}</TableCell>
                   <TableCell>{d.blood_type}</TableCell>
                   <TableCell>{d.city}</TableCell>
-                  <TableCell>{d.status}</TableCell>
+                  <TableCell className="capitalize">{d.status}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      <AddDonationConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmAddDonation}
+        donorName={donor.name}
+        isLoading={addLoading}
+      />
     </div>
   );
 };
