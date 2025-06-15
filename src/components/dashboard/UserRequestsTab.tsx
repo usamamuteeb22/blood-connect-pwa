@@ -9,6 +9,7 @@ interface UserRequestsTabProps {
 }
 
 interface RequestWithDonor extends BloodRequest {
+  reason: string;
   donor_name: string | null;
   donor_phone: string | null;
 }
