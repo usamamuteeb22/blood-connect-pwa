@@ -23,7 +23,7 @@ const StandardRequestForm = () => {
     city: "",
     address: "",
     reason: "",
-    urgencyLevel: "normal" as "low" | "normal" | "high" | "critical",
+    urgencyLevel: "normal" as "normal" | "critical" | "needed_today",
     unitsNeeded: 1,
     neededBy: "",
     hospitalName: "",
@@ -36,10 +36,9 @@ const StandardRequestForm = () => {
   
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const urgencyLevels = [
-    { value: "low", label: "Low" },
     { value: "normal", label: "Normal" },
-    { value: "high", label: "High" },
-    { value: "critical", label: "Critical" }
+    { value: "critical", label: "Critical" },
+    { value: "needed_today", label: "Needed Today" }
   ];
   
   const validateForm = () => {
@@ -89,7 +88,7 @@ const StandardRequestForm = () => {
       // Get the first available donor
       const donorId = donors && donors.length > 0 ? donors[0].id : null;
       
-      // Create the blood request with only existing fields
+      // Create the blood request with urgency_level field
       const requestData = {
         requester_id: user!.id,
         donor_id: donorId,
@@ -99,6 +98,7 @@ const StandardRequestForm = () => {
         city: formData.city,
         address: formData.address,
         contact: formData.contact,
+        urgency_level: formData.urgencyLevel,
         status: "pending" as const
       };
       
@@ -200,17 +200,31 @@ const StandardRequestForm = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="city" className={errors.city ? "text-destructive" : ""}>City *</Label>
-              <Input
-                id="city"
-                placeholder="City where blood is needed"
-                value={formData.city}
-                onChange={(e) => handleInputChange("city", e.target.value)}
-                required
-                className={errors.city ? "border-destructive" : ""}
-              />
-              {errors.city && <p className="text-sm font-medium text-destructive">{errors.city}</p>}
+              <Label htmlFor="urgencyLevel">Request Urgency</Label>
+              <Select value={formData.urgencyLevel} onValueChange={(value) => handleInputChange("urgencyLevel", value)}>
+                <SelectTrigger id="urgencyLevel">
+                  <SelectValue placeholder="Select urgency level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {urgencyLevels.map(level => (
+                    <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="city" className={errors.city ? "text-destructive" : ""}>City *</Label>
+            <Input
+              id="city"
+              placeholder="City where blood is needed"
+              value={formData.city}
+              onChange={(e) => handleInputChange("city", e.target.value)}
+              required
+              className={errors.city ? "border-destructive" : ""}
+            />
+            {errors.city && <p className="text-sm font-medium text-destructive">{errors.city}</p>}
           </div>
 
           <div className="space-y-1.5">

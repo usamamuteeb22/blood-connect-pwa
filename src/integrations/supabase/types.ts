@@ -22,6 +22,7 @@ export type Database = {
           requester_id: string
           requester_name: string
           status: string
+          urgency_level: string | null
         }
         Insert: {
           address: string
@@ -35,6 +36,7 @@ export type Database = {
           requester_id: string
           requester_name: string
           status?: string
+          urgency_level?: string | null
         }
         Update: {
           address?: string
@@ -48,6 +50,7 @@ export type Database = {
           requester_id?: string
           requester_name?: string
           status?: string
+          urgency_level?: string | null
         }
         Relationships: [
           {

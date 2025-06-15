@@ -47,7 +47,7 @@ export interface BloodRequest {
   address: string;
   contact: string;
   status: "pending" | "approved" | "rejected" | "completed";
-  urgency_level: "low" | "normal" | "high" | "critical" | "needed_today";
+  urgency_level: "normal" | "critical" | "needed_today";
   needed_by: string | null;
   units_needed: number;
   hospital_name: string | null;
