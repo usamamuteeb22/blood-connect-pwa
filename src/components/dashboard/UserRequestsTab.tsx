@@ -55,36 +55,6 @@ const statusMeta = {
   },
 };
 
-// Helper: urgency level badge
-const getUrgencyBadge = (urgency: string) => {
-  const urgencyColors = {
-    low: "bg-gray-100 text-gray-800",
-    normal: "bg-blue-100 text-blue-800",
-    high: "bg-orange-100 text-orange-800",
-    critical: "bg-red-100 text-red-800"
-  };
-  
-  return (
-    <Badge variant="outline" className={`${urgencyColors[urgency as keyof typeof urgencyColors]} flex items-center gap-1`}>
-      {urgency === 'critical' && <AlertCircle className="w-3 h-3" />}
-      {urgency.charAt(0).toUpperCase() + urgency.slice(1)}
-    </Badge>
-  );
-};
-
-// Helper: request type
-const getRequestTypeBadge = (req: BloodRequestWithDonor) => {
-  return req.donor_name ? (
-    <Badge variant="outline" className="border-cyan-700 text-cyan-900 bg-cyan-50 flex items-center gap-1">
-      <BadgeAlert className="w-3 h-3" /> Direct Donor Request
-    </Badge>
-  ) : (
-    <Badge variant="secondary" className="bg-gray-200 text-gray-800 flex items-center gap-1">
-      General Request
-    </Badge>
-  );
-};
-
 interface UserRequestsTabProps {
   userRequests: any[];
 }
@@ -108,17 +78,6 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
       
       if (error) throw error;
       
-      // Log activity
-      await supabase
-        .from('activity_logs')
-        .insert([{
-          user_id: user.id,
-          action: "blood_request_cancelled",
-          entity_type: "blood_request",
-          entity_id: id,
-          details: { cancelled_by: "requester" }
-        }]);
-      
       setRequests((reqs) =>
         reqs.map((req) =>
           req.id === id ? { ...req, status: "rejected" as const } : req
@@ -139,16 +98,44 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
 
       setLoading(true);
       try {
-        // Use the new view for cleaner queries
+        // Fetch blood requests with donor information via join
         const { data, error } = await supabase
-          .from("blood_request_details")
-          .select("*")
+          .from("blood_requests")
+          .select(`
+            *,
+            donors:donor_id (
+              name,
+              phone,
+              email,
+              is_eligible,
+              next_eligible_date
+            )
+          `)
           .eq("requester_id", user.id)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        setRequests(data || []);
+        // Transform the data to match our expected format
+        const transformedData = (data || []).map((request: any) => ({
+          ...request,
+          urgency_level: 'normal' as const, // Default values for missing fields
+          needed_by: null,
+          units_needed: 1,
+          hospital_name: null,
+          doctor_name: null,
+          additional_notes: null,
+          approved_at: null,
+          completed_at: null,
+          updated_at: request.created_at,
+          donor_name: request.donors?.name || null,
+          donor_phone: request.donors?.phone || null,
+          donor_email: request.donors?.email || null,
+          donor_is_eligible: request.donors?.is_eligible || null,
+          donor_next_eligible_date: request.donors?.next_eligible_date || null,
+        }));
+
+        setRequests(transformedData);
       } catch (error) {
         console.error("Error fetching user requests:", error);
         setRequests([]);
@@ -209,8 +196,6 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                         <span className={`${meta.color} rounded px-2 py-0.5 text-xs font-semibold`}>
                           {meta.label}
                         </span>
-                        {getUrgencyBadge(req.urgency_level)}
-                        {getRequestTypeBadge(req)}
                       </div>
                       <div className="text-xs text-gray-500">
                         {meta.desc}
@@ -248,35 +233,6 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                   </div>
 
                   <div>
-                    <p className="text-gray-500 font-medium">Units Needed</p>
-                    <p>{req.units_needed} unit{req.units_needed !== 1 ? 's' : ''}</p>
-                  </div>
-
-                  {req.needed_by && (
-                    <div>
-                      <p className="text-gray-500 font-medium flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Needed By
-                      </p>
-                      <p>{new Date(req.needed_by).toLocaleDateString()}</p>
-                    </div>
-                  )}
-
-                  {req.hospital_name && (
-                    <div>
-                      <p className="text-gray-500 font-medium">Hospital</p>
-                      <p className="text-xs">{req.hospital_name}</p>
-                    </div>
-                  )}
-
-                  {req.doctor_name && (
-                    <div>
-                      <p className="text-gray-500 font-medium">Doctor</p>
-                      <p className="text-xs">{req.doctor_name}</p>
-                    </div>
-                  )}
-
-                  <div>
                     <p className="text-gray-500 font-medium">Assigned Donor</p>
                     {req.donor_name ? (
                       <div className="space-y-1">
@@ -305,13 +261,6 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                     </div>
                   )}
                 </div>
-
-                {req.additional_notes && (
-                  <div className="bg-gray-50 p-2 rounded text-sm">
-                    <p className="text-gray-500 font-medium text-xs">Additional Notes</p>
-                    <p className="text-gray-700">{req.additional_notes}</p>
-                  </div>
-                )}
 
                 {/* Timeline/History */}
                 <div className="text-xs text-muted-foreground pt-1 border-t">

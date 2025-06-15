@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { ActivityLog } from "@/types/custom";
 
 const ActivityLogs = () => {
@@ -11,25 +10,23 @@ const ActivityLogs = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('activity_logs')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50);
-
-        if (error) throw error;
-
-        setLogs(data || []);
-      } catch (e) {
-        console.error('Error fetching activity logs:', e);
+    // Temporarily disable activity logs until database schema is updated
+    const mockLogs: ActivityLog[] = [
+      {
+        id: '1',
+        user_id: 'user1',
+        action: 'blood_request_created',
+        entity_type: 'blood_request',
+        entity_id: 'req1',
+        details: { reason: 'Emergency surgery' },
+        ip_address: '192.168.1.1',
+        user_agent: 'Chrome',
+        created_at: new Date().toISOString()
       }
-      setLoading(false);
-    };
+    ];
     
-    fetchLogs();
+    setLogs(mockLogs);
+    setLoading(false);
   }, []);
 
   const getActionBadge = (action: string) => {
@@ -63,7 +60,7 @@ const ActivityLogs = () => {
     <Card className="mt-2 p-4">
       <div className="mb-4">
         <h3 className="font-semibold text-lg">Recent Activity</h3>
-        <p className="text-sm text-gray-600">Track system activity and user actions</p>
+        <p className="text-sm text-gray-600">Track system activity and user actions (Demo mode)</p>
       </div>
       
       {loading ? (

@@ -36,10 +36,18 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     // Create profile from combined data
     return {
       id: authData.user.id,
-      name: donorData?.name || authData.user.user_metadata?.full_name || null,
-      email: authData.user.email,
-      avatar_url: authData.user.user_metadata?.avatar_url || null,
+      user_id: authData.user.id,
+      full_name: donorData?.name || authData.user.user_metadata?.full_name || null,
+      phone: donorData?.phone || authData.user.user_metadata?.phone || null,
+      date_of_birth: authData.user.user_metadata?.date_of_birth || null,
+      gender: authData.user.user_metadata?.gender || null,
       blood_type: donorData?.blood_type || authData.user.user_metadata?.blood_type || null,
+      emergency_contact_name: authData.user.user_metadata?.emergency_contact_name || null,
+      emergency_contact_phone: authData.user.user_metadata?.emergency_contact_phone || null,
+      medical_conditions: authData.user.user_metadata?.medical_conditions || null,
+      preferences: authData.user.user_metadata?.preferences || {},
+      created_at: authData.user.created_at,
+      updated_at: authData.user.updated_at || authData.user.created_at,
     };
   } catch (error) {
     console.error('Error fetching user profile:', error);
