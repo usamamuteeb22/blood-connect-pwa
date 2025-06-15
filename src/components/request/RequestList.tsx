@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import RequestCard from "./RequestCard";
 import { BloodRequestWithDonor } from "@/types/custom";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Clock, MapPin } from "lucide-react";
+import { AlertCircle, Clock, MapPin, Zap } from "lucide-react";
 
 const RequestList = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const RequestList = () => {
           // Transform the data to match BloodRequestWithDonor interface
           const transformedData = data.map((request: any) => ({
             ...request,
-            urgency_level: 'normal' as const,
+            urgency_level: request.urgency_level || 'normal',
             needed_by: null,
             units_needed: 1,
             hospital_name: null,
@@ -72,20 +72,34 @@ const RequestList = () => {
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'needed_today': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'normal': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getUrgencyIcon = (urgency: string) => {
+    switch (urgency) {
+      case 'critical': return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'needed_today': return <Zap className="w-4 h-4 text-orange-500" />;
+      default: return null;
+    }
+  };
+
+  const getUrgencyLabel = (urgency: string) => {
+    switch (urgency) {
+      case 'critical': return 'Critical';
+      case 'needed_today': return 'Needed Today';
+      case 'normal': return 'Normal';
+      default: return 'Normal';
     }
   };
 
   const filteredRequests = requests.filter(request => {
     if (filter === "all") return true;
     if (filter === "critical") return request.urgency_level === 'critical';
-    if (filter === "today") {
-      const today = new Date().toISOString().split('T')[0];
-      return request.needed_by === today;
-    }
+    if (filter === "needed_today") return request.urgency_level === 'needed_today';
+    if (filter === "normal") return request.urgency_level === 'normal';
     return request.blood_type === filter;
   });
 
@@ -118,12 +132,20 @@ const RequestList = () => {
               Critical
             </Button>
             <Button
-              variant={filter === "today" ? "default" : "outline"}
+              variant={filter === "needed_today" ? "default" : "outline"}
               size="sm"
-              onClick={() => setFilter("today")}
+              onClick={() => setFilter("needed_today")}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
             >
-              <Clock className="w-4 h-4 mr-1" />
+              <Zap className="w-4 h-4 mr-1" />
               Needed Today
+            </Button>
+            <Button
+              variant={filter === "normal" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter("normal")}
+            >
+              Normal
             </Button>
             {bloodTypes.map(type => (
               <Button
@@ -156,11 +178,9 @@ const RequestList = () => {
                       <h3 className="font-semibold text-lg">{request.requester_name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className={`${getUrgencyColor(request.urgency_level)} text-xs`}>
-                          {request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1)}
+                          {getUrgencyLabel(request.urgency_level)}
                         </Badge>
-                        {request.urgency_level === 'critical' && (
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                        )}
+                        {getUrgencyIcon(request.urgency_level)}
                       </div>
                     </div>
                   </div>
@@ -222,7 +242,7 @@ const RequestList = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-500 mb-4">
-              {filter === "all" ? "No blood requests found." : `No ${filter} requests found.`}
+              {filter === "all" ? "No blood requests found." : `No ${filter.replace('_', ' ')} requests found.`}
             </p>
             <Button 
               className="bg-blood hover:bg-blood-600"

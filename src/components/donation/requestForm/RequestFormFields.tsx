@@ -3,9 +3,8 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Control } from "react-hook-form";
-import { RequestFormValues, bloodTypes } from "./types";
+import { RequestFormValues, bloodTypes, urgencyLevels } from "./types";
 
 interface RequestFormFieldsProps {
   control: Control<RequestFormValues>;
@@ -29,6 +28,29 @@ const RequestFormFields = ({ control }: RequestFormFieldsProps) => {
               <SelectContent>
                 {bloodTypes.map((type) => (
                   <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="urgencyLevel"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Request Urgency</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select urgency level" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {urgencyLevels.map((level) => (
+                  <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -128,29 +150,6 @@ const RequestFormFields = ({ control }: RequestFormFieldsProps) => {
           )}
         />
       </div>
-
-      <FormField
-        control={control}
-        name="isCritical"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-            <FormControl>
-              <Checkbox
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
-            <div className="space-y-1 leading-none">
-              <FormLabel className="text-sm font-medium text-red-600">
-                Critical, Needed Today
-              </FormLabel>
-              <p className="text-xs text-muted-foreground">
-                Check this box if this is an urgent request that needs immediate attention
-              </p>
-            </div>
-          </FormItem>
-        )}
-      />
     </>
   );
 };

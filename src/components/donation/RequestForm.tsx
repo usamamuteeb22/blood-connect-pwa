@@ -26,7 +26,7 @@ const RequestForm = () => {
       address: "",
       contactName: user ? user.user_metadata?.full_name || "" : "",
       contactPhone: user ? user.user_metadata?.phone || "" : "",
-      isCritical: false,
+      urgencyLevel: "normal",
     },
   });
 
@@ -44,16 +44,26 @@ const RequestForm = () => {
         city: data.city,
         address: `${data.hospitalName}, ${data.address}`,
         contact: data.contactPhone,
+        urgency_level: data.urgencyLevel,
         status: "pending",
       });
 
       if (error) throw error;
 
+      const getSuccessMessage = (urgency: string) => {
+        switch (urgency) {
+          case 'critical':
+            return 'Your critical blood request has been submitted successfully. We will prioritize notifying donors immediately.';
+          case 'needed_today':
+            return 'Your urgent blood request has been submitted successfully. We will notify donors for immediate response.';
+          default:
+            return 'Your blood request has been submitted successfully. We will notify you when donors respond.';
+        }
+      };
+
       setSubmitStatus({
         type: 'success',
-        message: data.isCritical 
-          ? 'Your urgent blood request has been submitted successfully. We will prioritize notifying donors immediately.'
-          : 'Your blood request has been submitted successfully. We will notify you when donors respond.'
+        message: getSuccessMessage(data.urgencyLevel)
       });
 
       form.reset();
