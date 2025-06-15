@@ -39,7 +39,13 @@ const fetchUserRequests = async (userId: string): Promise<BloodRequest[]> => {
       return [];
     }
     
-    return data || [];
+    // Type assertion to ensure status matches our interface
+    const typedData = (data || []).map(item => ({
+      ...item,
+      status: item.status as "pending" | "approved" | "rejected" | "completed"
+    }));
+    
+    return typedData;
   } catch (error) {
     console.error('Error fetching user requests:', error);
     return [];
@@ -60,7 +66,13 @@ const fetchUserDonations = async (userId: string): Promise<Donation[]> => {
       return [];
     }
     
-    return data || [];
+    // Type assertion to ensure status matches our interface
+    const typedData = (data || []).map(item => ({
+      ...item,
+      status: item.status as "completed"
+    }));
+    
+    return typedData;
   } catch (error) {
     console.error('Error fetching user donations:', error);
     return [];
@@ -82,7 +94,13 @@ const fetchDonorRequests = async (donorId: string): Promise<BloodRequest[]> => {
       return [];
     }
     
-    return data || [];
+    // Type assertion to ensure status matches our interface
+    const typedData = (data || []).map(item => ({
+      ...item,
+      status: item.status as "pending" | "approved" | "rejected" | "completed"
+    }));
+    
+    return typedData;
   } catch (error) {
     console.error('Error fetching donor requests:', error);
     return [];
