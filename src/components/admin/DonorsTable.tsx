@@ -74,7 +74,7 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
 
   const SortableHeader = ({ field, children }: { field: keyof Donor; children: React.ReactNode }) => (
     <TableHead 
-      className="cursor-pointer hover:bg-gray-50"
+      className="cursor-pointer hover:bg-gray-50 px-2"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-1">
@@ -103,17 +103,17 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-16">Call</TableHead>
-            <SortableHeader field="name">Full Name</SortableHeader>
+            <TableHead className="w-12 px-2">Call</TableHead>
+            <SortableHeader field="name">Name</SortableHeader>
             <SortableHeader field="email">Email</SortableHeader>
             <SortableHeader field="age">Age</SortableHeader>
             <SortableHeader field="phone">Phone</SortableHeader>
-            <SortableHeader field="blood_type">Blood Group</SortableHeader>
+            <SortableHeader field="blood_type">Blood</SortableHeader>
             <SortableHeader field="city">City</SortableHeader>
-            <TableHead>Address</TableHead>
-            <SortableHeader field="created_at">Date Registered</SortableHeader>
+            <TableHead className="min-w-[200px]">Address</TableHead>
+            <SortableHeader field="created_at">Registered</SortableHeader>
             <SortableHeader field="is_eligible">Status</SortableHeader>
-            <TableHead className="w-12">Actions</TableHead>
+            <TableHead className="w-12 px-2">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -123,7 +123,7 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
               className={clickableRows ? "cursor-pointer hover:bg-blue-50" : ""}
               onClick={clickableRows ? () => navigate(`/admin/donor/${donor.id}`) : undefined}
             >
-              <TableCell>
+              <TableCell className="px-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -136,27 +136,28 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
                   <Phone className="h-4 w-4 text-green-600" />
                 </Button>
               </TableCell>
-              <TableCell className="font-medium">{donor.name}</TableCell>
-              <TableCell>{donor.email}</TableCell>
-              <TableCell>{donor.age}</TableCell>
-              <TableCell>{donor.phone}</TableCell>
-              <TableCell>
+              <TableCell className="font-medium px-2">{donor.name}</TableCell>
+              <TableCell className="px-2">{donor.email}</TableCell>
+              <TableCell className="px-2">{donor.age}</TableCell>
+              <TableCell className="px-2">{donor.phone}</TableCell>
+              <TableCell className="px-2">
                 <Badge variant="outline" className="bg-blood/10 text-blood border-blood/20">
                   {donor.blood_type}
                 </Badge>
               </TableCell>
-              <TableCell>{donor.city}</TableCell>
-              <TableCell className="max-w-32 truncate" title={donor.address}>
-                {donor.address}
+              <TableCell className="px-2">{donor.city}</TableCell>
+              <TableCell className="px-2 min-w-[200px]" title={donor.address}>
+                <div className="max-w-[200px] break-words">
+                  {donor.address}
+                </div>
               </TableCell>
-              <TableCell>
-                {/* created_at is optional! */}
+              <TableCell className="px-2">
                 {donor.created_at ? 
                   format(new Date(donor.created_at), 'MMM dd, yyyy') : 
                   <span>-</span>
                 }
               </TableCell>
-              <TableCell>
+              <TableCell className="px-2">
                 <Badge 
                   variant={donor.is_eligible ? "default" : "secondary"}
                   className={donor.is_eligible ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
@@ -164,7 +165,7 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
                   {donor.is_eligible ? "Active" : "Inactive"}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell className="px-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
