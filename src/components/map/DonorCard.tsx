@@ -77,6 +77,10 @@ const DonorCard: React.FC<DonorCardProps> = ({ donor, onSelect, distance }) => {
         <Button 
           className="w-full mt-4 bg-red-600 hover:bg-red-700"
           disabled={!donor.is_eligible}
+          onClick={e => {
+            e.stopPropagation();
+            onSelect(donor);
+          }}
         >
           {donor.is_eligible ? 'Request Blood' : 'Not Available'}
         </Button>
