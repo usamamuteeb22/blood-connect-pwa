@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Donor } from "@/types/custom";
@@ -143,7 +142,6 @@ const AnalyticsDashboard = ({ donors }: { donors: Donor[] }) => {
 
     } catch (error) {
       console.error("Error fetching analytics statistics:", error);
-      toast.error("Failed to load analytics data");
     } finally {
       setLoading(false);
     }
