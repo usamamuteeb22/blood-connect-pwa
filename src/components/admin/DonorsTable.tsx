@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Phone } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -103,6 +103,7 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-16">Call</TableHead>
             <SortableHeader field="name">Full Name</SortableHeader>
             <SortableHeader field="email">Email</SortableHeader>
             <SortableHeader field="age">Age</SortableHeader>
@@ -122,6 +123,19 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
               className={clickableRows ? "cursor-pointer hover:bg-blue-50" : ""}
               onClick={clickableRows ? () => navigate(`/admin/donor/${donor.id}`) : undefined}
             >
+              <TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(`tel:${donor.phone}`, '_blank');
+                  }}
+                  className="h-8 w-8 p-0 hover:bg-green-50 hover:border-green-300"
+                >
+                  <Phone className="h-4 w-4 text-green-600" />
+                </Button>
+              </TableCell>
               <TableCell className="font-medium">{donor.name}</TableCell>
               <TableCell>{donor.email}</TableCell>
               <TableCell>{donor.age}</TableCell>
@@ -189,4 +203,3 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
 };
 
 export default DonorsTable;
-
