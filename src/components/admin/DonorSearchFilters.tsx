@@ -56,7 +56,7 @@ const DonorSearchFilters = ({
             <SelectValue placeholder="Blood Group" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Groups</SelectItem>
+            <SelectItem value="all">All Groups</SelectItem>
             {bloodTypes.map(type => (
               <SelectItem key={type} value={type}>{type}</SelectItem>
             ))}

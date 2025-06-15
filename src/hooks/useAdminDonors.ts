@@ -10,7 +10,7 @@ export const useAdminDonors = () => {
   const [donorsLoading, setDonorsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState({ field: "", value: "" });
   const [locationQuery, setLocationQuery] = useState({ city: "", address: "" });
-  const [bloodGroupFilter, setBloodGroupFilter] = useState("");
+  const [bloodGroupFilter, setBloodGroupFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [exportAllLoading, setExportAllLoading] = useState(false);
 
@@ -77,8 +77,8 @@ export const useAdminDonors = () => {
         donor.address?.toLowerCase().includes(locationQuery.address.toLowerCase())
       );
     }
-    // Blood group filter
-    if (bloodGroupFilter) {
+    // Blood group filter - only filter if not "all"
+    if (bloodGroupFilter && bloodGroupFilter !== "all") {
       filtered = filtered.filter(donor =>
         donor.blood_type === bloodGroupFilter
       );
