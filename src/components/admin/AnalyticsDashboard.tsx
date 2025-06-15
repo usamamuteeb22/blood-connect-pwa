@@ -26,65 +26,104 @@ const AnalyticsDashboard = ({ donors }: { donors: Donor[] }) => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Donations for this year, this month, by group
-      const year = new Date().getFullYear();
-      const month = new Date().getMonth() + 1; // Jan = 0
-      let { data: donations, error } = await supabase
+      console.log('Fetching donation statistics...');
+      
+      // Get current date info
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      // Fetch all donations with donor info
+      const { data: donations, error } = await supabase
         .from('donations')
-        .select('*, donor:donor_id(name, email, blood_type)')
+        .select(`
+          *,
+          donor:donor_id (
+            id,
+            name,
+            email,
+            blood_type
+          )
+        `)
         .order('date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching donations:", error);
+        throw error;
+      }
 
-      // Totals
-      let monthTotal = 0, yearTotal = 0;
-      let groupMap: Record<string, number> = {};
-      let donorMap: Record<string, { name: string, email: string, count: number }> = {};
-      let groupDemand: Record<string, number> = {};
+      console.log(`Found ${donations?.length || 0} total donations`);
 
-      for (const d of donations || []) {
-        const donDate = d.date ? parseISO(d.date) : null;
-        if (donDate && donDate.getFullYear() === year) {
+      // Initialize counters
+      let monthTotal = 0;
+      let yearTotal = 0;
+      const groupMap: Record<string, number> = {};
+      const donorMap: Record<string, { name: string, email: string, count: number }> = {};
+
+      // Process each donation
+      for (const donation of donations || []) {
+        const donationDate = parseISO(donation.date);
+        
+        // Count by time period
+        if (donationDate.getFullYear() === currentYear) {
           yearTotal += 1;
-          if (donDate.getMonth() + 1 === month) {
+          if (donationDate.getMonth() + 1 === currentMonth) {
             monthTotal += 1;
           }
         }
-        // Group
-        if (d.blood_type) {
-          groupMap[d.blood_type] = (groupMap[d.blood_type] || 0) + 1;
+
+        // Count by blood group
+        if (donation.blood_type) {
+          groupMap[donation.blood_type] = (groupMap[donation.blood_type] || 0) + 1;
         }
-        // Top donors
-        if (d.donor && d.donor.email) {
-          const key = d.donor.email;
-          donorMap[key] = donorMap[key] || { name: d.donor.name, email: key, count: 0 };
+
+        // Count by donor
+        if (donation.donor && donation.donor.email) {
+          const key = donation.donor.email;
+          if (!donorMap[key]) {
+            donorMap[key] = { 
+              name: donation.donor.name || 'Unknown', 
+              email: key, 
+              count: 0 
+            };
+          }
           donorMap[key].count += 1;
         }
       }
-      // Top in-demand blood groups (from blood_requests with status 'pending')
+
+      // Get in-demand blood groups from pending requests
       const { data: requests } = await supabase
         .from("blood_requests")
         .select("blood_type")
         .eq("status", "pending");
+
+      const groupDemand: Record<string, number> = {};
       if (requests) {
-        for (const r of requests) {
-          if (r.blood_type) {
-            groupDemand[r.blood_type] = (groupDemand[r.blood_type] || 0) + 1;
+        for (const request of requests) {
+          if (request.blood_type) {
+            groupDemand[request.blood_type] = (groupDemand[request.blood_type] || 0) + 1;
           }
         }
       }
+
       // Top 5 donors
-      const topDonors = Object.values(donorMap).sort((a,b) => b.count - a.count).slice(0, 5);
-      // Distribution by group (recharts)
-      const byGroupArr = bloodGroups.map(bg => ({
-        blood_type: bg,
-        count: groupMap[bg] || 0,
-      }));
+      const topDonors = Object.values(donorMap)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
       // Top demand groups
       const topGroups = Object.entries(groupDemand)
         .map(([blood_type, count]) => ({ blood_type, count }))
-        .sort((a,b) => b.count - a.count)
+        .sort((a, b) => b.count - a.count)
         .slice(0, 5);
+
+      console.log('Analytics summary:', {
+        monthTotal,
+        yearTotal,
+        groupCounts: Object.keys(groupMap).length,
+        topDonorsCount: topDonors.length,
+        topGroupsCount: topGroups.length
+      });
 
       setDonationStats({
         monthly: monthTotal,
@@ -94,7 +133,7 @@ const AnalyticsDashboard = ({ donors }: { donors: Donor[] }) => {
         topDonors,
       });
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching statistics:", e);
     }
     setLoading(false);
   };
@@ -105,9 +144,12 @@ const AnalyticsDashboard = ({ donors }: { donors: Donor[] }) => {
 
   // Listen for donation updates
   useEffect(() => {
-    const handleDonationAdded = () => {
-      console.log('Donation added event received, refreshing analytics...');
-      fetchStats();
+    const handleDonationAdded = (event: any) => {
+      console.log('Donation added event received, refreshing analytics...', event.detail);
+      // Add a small delay to ensure the database has been updated
+      setTimeout(() => {
+        fetchStats();
+      }, 500);
     };
 
     window.addEventListener('donationAdded', handleDonationAdded);
