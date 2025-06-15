@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -23,6 +24,7 @@ const requestFormSchema = z.object({
   address: z.string().min(5, "Address is required"),
   contactName: z.string().min(3, "Contact name is required"),
   contactPhone: z.string().min(10, "Valid phone number is required"),
+  isCritical: z.boolean().default(false),
 });
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
@@ -42,6 +44,7 @@ const RequestForm = () => {
       address: "",
       contactName: user ? user.user_metadata?.full_name || "" : "",
       contactPhone: user ? user.user_metadata?.phone || "" : "",
+      isCritical: false,
     },
   });
 
@@ -66,7 +69,9 @@ const RequestForm = () => {
 
       setSubmitStatus({
         type: 'success',
-        message: 'Your blood request has been submitted successfully. We will notify you when donors respond.'
+        message: data.isCritical 
+          ? 'Your urgent blood request has been submitted successfully. We will prioritize notifying donors immediately.'
+          : 'Your blood request has been submitted successfully. We will notify you when donors respond.'
       });
 
       form.reset();
@@ -206,6 +211,29 @@ const RequestForm = () => {
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="isCritical"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm font-medium text-red-600">
+                      Critical, Needed Today
+                    </FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Check this box if this is an urgent request that needs immediate attention
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
 
             <Button 
               type="submit" 
