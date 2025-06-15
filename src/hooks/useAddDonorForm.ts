@@ -41,35 +41,43 @@ export const useAddDonorForm = (onSuccess: () => void, onOpenChange: (open: bool
     setErrorMessage(null);
 
     try {
+      // Only check required fields: name, phone, blood_type, age, city
       if (
         !formData.name ||
-        !formData.email ||
         !formData.phone ||
         !formData.blood_type ||
         !formData.age ||
-        !formData.weight ||
-        !formData.city ||
-        !formData.address
+        !formData.city
       ) {
-        throw new Error("All required fields must be filled in.");
+        throw new Error("Name, phone, blood type, age, and city are required fields.");
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        throw new Error("Invalid email address format.");
+      // Validate email only if provided
+      if (formData.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+          throw new Error("Invalid email address format.");
+        }
       }
+
       if (!validatePhone(formData.phone)) {
         throw new Error("Invalid phone number.");
       }
-      if (!validateAddress(formData.address)) {
+
+      // Validate address only if provided
+      if (formData.address && !validateAddress(formData.address)) {
         throw new Error("Address must be between 6-255 characters.");
       }
 
       const age = parseInt(formData.age);
-      const weight = parseInt(formData.weight);
-
       if (isNaN(age) || age < 18 || age > 65) throw new Error("Age must be a number between 18 and 65.");
-      if (isNaN(weight) || weight < 50) throw new Error("Weight must be at least 50kg.");
+
+      // Weight is optional now
+      let weight = null;
+      if (formData.weight) {
+        weight = parseInt(formData.weight);
+        if (isNaN(weight) || weight < 50) throw new Error("Weight must be at least 50kg if provided.");
+      }
 
       // Get session info
       const { data: sessionData } = await supabase.auth.getSession();
@@ -79,41 +87,42 @@ export const useAddDonorForm = (onSuccess: () => void, onOpenChange: (open: bool
       let finalUserId = userId;
       let authData, authError;
       if (!userId) {
-        const res = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: "TempPassword123!",
-          email_confirm: true,
-          user_metadata: {
-            full_name: formData.name,
-            phone: formData.phone,
-            blood_type: formData.blood_type,
-            role: "user",
-          },
-        });
-        authData = res.data;
-        authError = res.error;
-        if (authError) {
-          if (authError.message.includes("already registered")) {
-            // Proceed: user already exists
-          } else {
-            throw new Error("Could not register user. Please verify they are not already registered.");
+        // Only create auth user if email is provided
+        if (formData.email) {
+          const res = await supabase.auth.admin.createUser({
+            email: formData.email,
+            password: "TempPassword123!",
+            email_confirm: true,
+            user_metadata: {
+              full_name: formData.name,
+              phone: formData.phone,
+              blood_type: formData.blood_type,
+              role: "user",
+            },
+          });
+          authData = res.data;
+          authError = res.error;
+          if (authError) {
+            if (authError.message.includes("already registered")) {
+              // Proceed: user already exists
+            } else {
+              throw new Error("Could not register user. Please verify they are not already registered.");
+            }
           }
+          finalUserId = authData?.user?.id || null;
         }
-        finalUserId = authData?.user?.id || null;
       }
-
-      if (!finalUserId) throw new Error("No valid user id found for donor record.");
 
       const { error: dbError } = await supabase.from("donors").insert({
         user_id: finalUserId,
         name: formData.name,
-        email: formData.email,
+        email: formData.email || null,
         phone: formData.phone,
         age: age,
         weight: weight,
         blood_type: formData.blood_type,
         city: formData.city,
-        address: formData.address,
+        address: formData.address || null,
         is_eligible: formData.is_eligible,
         next_eligible_date: new Date().toISOString(),
         latitude: null,
@@ -142,4 +151,3 @@ export const useAddDonorForm = (onSuccess: () => void, onOpenChange: (open: bool
     errorMessage,
   };
 };
-

@@ -15,7 +15,7 @@ interface AddDonorDialogProps {
 }
 
 const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) => {
-  const { formData, isLoading, handleInputChange, handleSubmit } = useAddDonorForm(onSuccess, onOpenChange);
+  const { formData, isLoading, handleInputChange, handleSubmit, errorMessage } = useAddDonorForm(onSuccess, onOpenChange);
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
   return (
@@ -24,11 +24,17 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
         <DialogHeader>
           <DialogTitle>Add New Donor</DialogTitle>
           <DialogDescription>
-            Manually add a new donor to the system. All fields are required.
+            Manually add a new donor to the system. Required fields are marked with *.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Full Name */}
             <div className="space-y-2">
@@ -42,16 +48,15 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
               />
             </div>
 
-            {/* Email */}
+            {/* Email - now optional */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="john@example.com"
-                required
               />
             </div>
 
@@ -82,9 +87,9 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
               />
             </div>
 
-            {/* Weight */}
+            {/* Weight - now optional */}
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg) *</Label>
+              <Label htmlFor="weight">Weight (kg)</Label>
               <Input
                 id="weight"
                 type="number"
@@ -92,7 +97,6 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
                 value={formData.weight}
                 onChange={(e) => handleInputChange("weight", e.target.value)}
                 placeholder="70"
-                required
               />
             </div>
 
@@ -124,16 +128,15 @@ const AddDonorDialog = ({ open, onOpenChange, onSuccess }: AddDonorDialogProps) 
             </div>
           </div>
 
-          {/* Address */}
+          {/* Address - now optional */}
           <div className="space-y-2">
-            <Label htmlFor="address">Address *</Label>
+            <Label htmlFor="address">Address</Label>
             <Textarea
               id="address"
               value={formData.address}
               onChange={(e) => handleInputChange("address", e.target.value)}
               placeholder="123 Main Street, Apt 4B, New York, NY 10001"
               rows={3}
-              required
             />
           </div>
 
