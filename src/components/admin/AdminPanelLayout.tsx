@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -197,9 +196,6 @@ const AdminPanelLayout = () => {
             />
           </div>
         </Card>
-
-        {/* Activity Logs */}
-        <ActivityLogs />
 
         {/* Add Donor Dialog */}
         <AddDonorDialog 
