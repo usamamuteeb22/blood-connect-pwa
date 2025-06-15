@@ -1,8 +1,8 @@
-
 import { BloodRequest } from "@/types/custom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 interface UserRequestsTabProps {
   userRequests: BloodRequest[];
@@ -132,8 +132,8 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                     </p>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
+                <Badge
+                  className={
                     req.status === "pending"
                       ? "bg-amber-100 text-amber-800"
                       : req.status === "approved"
@@ -141,10 +141,10 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                       : req.status === "rejected"
                       ? "bg-red-100 text-red-800"
                       : "bg-gray-200 text-gray-700"
-                  }`}
+                  }
                 >
                   {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                </span>
+                </Badge>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -167,7 +167,9 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                 <div>
                   <p className="text-gray-500 font-medium">Requested Donor</p>
                   {req.donor_name ? (
-                    <span className="font-medium text-green-700">{req.donor_name}</span>
+                    <Badge variant="outline" className="border-green-500 text-green-900 bg-green-50">
+                      {req.donor_name}
+                    </Badge>
                   ) : (
                     <span className="text-gray-400">No specific donor (general request)</span>
                   )}
@@ -175,9 +177,9 @@ const UserRequestsTab = ({ userRequests }: UserRequestsTabProps) => {
                 {req.donor_phone && (
                   <div>
                     <p className="text-gray-500 font-medium">Donor Contact</p>
-                    <span className="font-medium text-green-700">
+                    <Badge variant="outline" className="border-green-500 text-green-900 bg-green-50">
                       {req.donor_phone}
-                    </span>
+                    </Badge>
                   </div>
                 )}
               </div>
