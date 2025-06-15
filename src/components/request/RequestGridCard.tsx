@@ -1,7 +1,9 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Clock, MapPin, Zap, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertCircle, Clock, MapPin, Zap, Info, Phone, Mail, User, Calendar, Building2 } from "lucide-react";
 import { BloodRequestWithDonor } from "@/types/custom";
 
 interface RequestGridCardProps {
@@ -10,6 +12,8 @@ interface RequestGridCardProps {
 }
 
 const RequestGridCard = ({ request, onRespond }: RequestGridCardProps) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'critical': return 'bg-red-100 text-red-800 border-red-200';
@@ -34,23 +38,6 @@ const RequestGridCard = ({ request, onRespond }: RequestGridCardProps) => {
       case 'normal': return 'Normal';
       default: return 'Normal';
     }
-  };
-
-  const handleShowInfo = () => {
-    alert(`Blood Request Details:
-
-Requester: ${request.requester_name}
-Blood Type: ${request.blood_type}
-Urgency: ${getUrgencyLabel(request.urgency_level)}
-Reason: ${request.reason}
-City: ${request.city}
-Units Needed: ${request.units_needed}
-${request.needed_by ? `Needed By: ${new Date(request.needed_by).toLocaleDateString()}` : ''}
-${request.hospital_name ? `Hospital: ${request.hospital_name}` : ''}
-Contact: ${request.contact}
-Address: ${request.address}
-
-To donate, please contact the requester directly using the contact information provided.`);
   };
 
   return (
@@ -108,13 +95,101 @@ To donate, please contact the requester directly using the contact information p
       </div>
 
       <div className="flex gap-2">
-        <Button 
-          className="flex-1 bg-blue-600 hover:bg-blue-700"
-          onClick={handleShowInfo}
-        >
-          <Info className="w-4 h-4 mr-2" />
-          Show Info
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+            >
+              <Info className="w-4 h-4 mr-2" />
+              Show Info
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  {request.blood_type}
+                </div>
+                Blood Request Details
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <User className="w-5 h-5 text-gray-600" />
+                <div>
+                  <p className="font-medium">{request.requester_name}</p>
+                  <p className="text-sm text-gray-600">Requester</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <Phone className="w-4 h-4 text-gray-600" />
+                  <div>
+                    <p className="text-sm font-medium">{request.contact}</p>
+                    <p className="text-xs text-gray-600">Phone</p>
+                  </div>
+                </div>
+                
+                {request.donor_email && (
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                    <Mail className="w-4 h-4 text-gray-600" />
+                    <div>
+                      <p className="text-sm font-medium break-all">{request.donor_email}</p>
+                      <p className="text-xs text-gray-600">Email</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm"><strong>Location:</strong> {request.city}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm"><strong>Urgency:</strong> {getUrgencyLabel(request.urgency_level)}</span>
+                </div>
+
+                <div className="text-sm">
+                  <strong>Reason:</strong> {request.reason}
+                </div>
+
+                <div className="text-sm">
+                  <strong>Units needed:</strong> {request.units_needed}
+                </div>
+
+                {request.needed_by && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm"><strong>Needed by:</strong> {new Date(request.needed_by).toLocaleDateString()}</span>
+                  </div>
+                )}
+
+                {request.hospital_name && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm"><strong>Hospital:</strong> {request.hospital_name}</span>
+                  </div>
+                )}
+
+                <div className="text-sm">
+                  <strong>Address:</strong> {request.address}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-sm text-gray-600 text-center">
+                  To donate, please contact the requester directly using the contact information provided above.
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
         <Button 
           variant="outline"
           size="sm"
