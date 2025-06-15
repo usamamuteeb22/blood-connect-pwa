@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -227,11 +226,11 @@ const DonorProfilePage = () => {
             variant="outline"
             onClick={() =>
               import('@/utils/exportUtils').then(m =>
-                m.exportToCSV(donations, `donor-${donor.id}-donations`)
+                m.exportToExcel(donations, `donor-${donor.id}-donations`)
               )
             }
           >
-            Export Donations (CSV)
+            Export Donations
           </Button>
           
           <Button
@@ -294,4 +293,3 @@ const DonorProfilePage = () => {
 };
 
 export default DonorProfilePage;
-
