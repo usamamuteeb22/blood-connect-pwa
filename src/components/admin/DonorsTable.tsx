@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,60 @@ interface DonorsTableProps {
   clickableRows?: boolean;
 }
 
+interface DonorWithDonationCount extends Donor {
+  donation_count: number;
+}
+
 const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps) => {
   const [sortField, setSortField] = useState<keyof Donor>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [donorsWithCounts, setDonorsWithCounts] = useState<DonorWithDonationCount[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+
+  // Fetch donation counts for all donors
+  useEffect(() => {
+    const fetchDonationCounts = async () => {
+      if (donors.length === 0) return;
+      
+      setLoading(true);
+      try {
+        const donorIds = donors.map(d => d.id);
+        const { data: donationCounts, error } = await supabase
+          .from('donations')
+          .select('donor_id')
+          .in('donor_id', donorIds);
+
+        if (error) {
+          console.error('Error fetching donation counts:', error);
+          // Set counts to 0 if error
+          setDonorsWithCounts(donors.map(donor => ({ ...donor, donation_count: 0 })));
+          return;
+        }
+
+        // Count donations per donor
+        const countMap = donationCounts.reduce((acc, donation) => {
+          acc[donation.donor_id] = (acc[donation.donor_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const donorsWithCounts = donors.map(donor => ({
+          ...donor,
+          donation_count: countMap[donor.id] || 0
+        }));
+
+        setDonorsWithCounts(donorsWithCounts);
+      } catch (error) {
+        console.error('Error in fetchDonationCounts:', error);
+        setDonorsWithCounts(donors.map(donor => ({ ...donor, donation_count: 0 })));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDonationCounts();
+  }, [donors]);
 
   const handleSort = (field: keyof Donor) => {
     if (sortField === field) {
@@ -29,7 +80,7 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps) => 
     }
   };
 
-  const sortedDonors = [...donors].sort((a, b) => {
+  const sortedDonors = [...donorsWithCounts].sort((a, b) => {
     const aValue = a[sortField];
     const bValue = b[sortField];
     
@@ -87,12 +138,18 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps) => 
     </TableHead>
   );
 
-  const navigate = useNavigate();
-
   if (donors.length === 0) {
     return (
       <div className="text-center py-10">
         <p className="text-gray-500">No donors found</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500">Loading donation counts...</p>
       </div>
     );
   }
@@ -110,6 +167,7 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps) => 
             <SortableHeader field="blood_type">Blood</SortableHeader>
             <SortableHeader field="city">City</SortableHeader>
             <TableHead className="min-w-[200px]">Address</TableHead>
+            <TableHead>Donations</TableHead>
             <SortableHeader field="last_donation_date">Last Donation</SortableHeader>
             <SortableHeader field="created_at">Registered</SortableHeader>
             <TableHead>Eligibility</TableHead>
@@ -153,6 +211,11 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps) => 
                   <div className="max-w-[200px] break-words">
                     {donor.address}
                   </div>
+                </TableCell>
+                <TableCell className="px-2">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    {donor.donation_count}
+                  </Badge>
                 </TableCell>
                 <TableCell className="px-2">
                   {donor.last_donation_date ? 

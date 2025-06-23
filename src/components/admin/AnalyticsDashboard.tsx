@@ -1,243 +1,293 @@
+
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Donor } from "@/types/custom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { format, parseISO } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import type { Donor } from "@/types/custom";
 
-const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const groupColors = [
-  "#ed2222","#ff7675","#039be5","#ffd600",
-  "#00b894","#b2bec3","#e17055","#c44536"
-];
+interface AnalyticsDashboardProps {
+  donors: Donor[];
+}
 
-const AnalyticsDashboard = ({ donors }: { donors: Donor[] }) => {
-  const [donationStats, setDonationStats] = useState({
-    monthly: 0,
-    yearly: 0,
-    byGroup: {} as Record<string, number>,
-    topGroups: [] as { blood_type: string, count: number }[],
-    topDonors: [] as { name: string, email: string, count: number }[],
-  });
+interface BloodGroupData {
+  bloodGroup: string;
+  count: number;
+  fill: string;
+}
+
+interface TopDonor {
+  id: string;
+  name: string;
+  bloodGroup: string;
+  donationCount: number;
+}
+
+interface DailyDonation {
+  date: string;
+  count: number;
+}
+
+const bloodGroupColors: Record<string, string> = {
+  "A+": "#ef4444",
+  "A-": "#dc2626", 
+  "A1": "#b91c1c",
+  "B+": "#3b82f6",
+  "B-": "#2563eb",
+  "AB+": "#8b5cf6",
+  "AB-": "#7c3aed",
+  "O+": "#10b981",
+  "O-": "#059669"
+};
+
+const chartConfig = {
+  bloodGroup: {
+    label: "Blood Group"
+  },
+  count: {
+    label: "Donations"
+  }
+};
+
+const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
+  const [bloodGroupData, setBloodGroupData] = useState<BloodGroupData[]>([]);
+  const [topDonors, setTop DonorsState] = useState<TopDonor[]>([]);
+  const [dailyDonations, setDailyDonations] = useState<DailyDonation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch analytics with comprehensive error handling
-  const fetchStats = async () => {
-    console.log('Starting analytics fetch...');
-    setLoading(true);
-    
-    try {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
-
-      console.log(`Fetching analytics for year ${currentYear}, month ${currentMonth}`);
-
-      // Fetch all donations with detailed logging
-      const { data: donations, error: donationsError } = await supabase
-        .from('donations')
-        .select(`
-          *,
-          donor:donor_id (
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      setLoading(true);
+      try {
+        // Fetch all donations with donor data
+        const { data: donations, error } = await supabase
+          .from('donations')
+          .select(`
             id,
-            name,
-            email,
-            blood_type
-          )
-        `)
-        .order('date', { ascending: false });
+            donor_id,
+            blood_type,
+            date,
+            donors (
+              id,
+              name,
+              blood_type
+            )
+          `);
 
-      if (donationsError) {
-        console.error("Analytics donations fetch error:", donationsError);
-        throw donationsError;
-      }
+        if (error) {
+          console.error('Error fetching donations:', error);
+          setLoading(false);
+          return;
+        }
 
-      console.log(`Found ${donations?.length || 0} total donations:`, donations);
+        // Process blood group data
+        const bloodGroupCounts: Record<string, number> = {};
+        donations?.forEach(donation => {
+          const bloodType = donation.blood_type;
+          bloodGroupCounts[bloodType] = (bloodGroupCounts[bloodType] || 0) + 1;
+        });
 
-      // Initialize counters
-      let monthTotal = 0;
-      let yearTotal = 0;
-      const groupMap: Record<string, number> = {};
-      const donorMap: Record<string, { name: string, email: string, count: number }> = {};
+        const bloodGroupChartData = Object.entries(bloodGroupCounts).map(([bloodGroup, count]) => ({
+          bloodGroup,
+          count,
+          fill: bloodGroupColors[bloodGroup] || "#6b7280"
+        }));
 
-      // Process each donation with detailed logging
-      for (const donation of donations || []) {
-        try {
-          const donationDate = parseISO(donation.date);
-          console.log(`Processing donation ${donation.id} from ${donation.date}`);
-          
-          // Count by time period
-          if (donationDate.getFullYear() === currentYear) {
-            yearTotal += 1;
-            if (donationDate.getMonth() + 1 === currentMonth) {
-              monthTotal += 1;
-              console.log(`Month donation count: ${monthTotal}`);
-            }
-          }
+        setBloodGroupData(bloodGroupChartData);
 
-          // Count by blood group
-          if (donation.blood_type) {
-            groupMap[donation.blood_type] = (groupMap[donation.blood_type] || 0) + 1;
-            console.log(`Blood group ${donation.blood_type} count: ${groupMap[donation.blood_type]}`);
-          }
-
-          // Count by donor
-          if (donation.donor && donation.donor.email) {
-            const key = donation.donor.email;
-            if (!donorMap[key]) {
-              donorMap[key] = { 
-                name: donation.donor.name || 'Unknown', 
-                email: key, 
-                count: 0 
+        // Process top donors data
+        const donorCounts: Record<string, { name: string; bloodGroup: string; count: number }> = {};
+        donations?.forEach(donation => {
+          if (donation.donors) {
+            const donorId = donation.donor_id;
+            const donorData = Array.isArray(donation.donors) ? donation.donors[0] : donation.donors;
+            
+            if (!donorCounts[donorId]) {
+              donorCounts[donorId] = {
+                name: donorData.name,
+                bloodGroup: donorData.blood_type,
+                count: 0
               };
             }
-            donorMap[key].count += 1;
-            console.log(`Donor ${donation.donor.name} count: ${donorMap[key].count}`);
+            donorCounts[donorId].count++;
           }
-        } catch (dateError) {
-          console.error(`Error processing donation ${donation.id}:`, dateError);
-        }
-      }
+        });
 
-      // Get in-demand blood groups from pending requests
-      const { data: requests, error: requestsError } = await supabase
-        .from("blood_requests")
-        .select("blood_type")
-        .eq("status", "pending");
+        const topDonorsData = Object.entries(donorCounts)
+          .map(([id, data]) => ({
+            id,
+            name: data.name,
+            bloodGroup: data.bloodGroup,
+            donationCount: data.count
+          }))
+          .sort((a, b) => b.donationCount - a.donationCount)
+          .slice(0, 10);
 
-      if (requestsError) {
-        console.error("Requests fetch error:", requestsError);
-      }
+        setTopDonors(topDonorsData);
 
-      const groupDemand: Record<string, number> = {};
-      if (requests) {
-        for (const request of requests) {
-          if (request.blood_type) {
-            groupDemand[request.blood_type] = (groupDemand[request.blood_type] || 0) + 1;
+        // Process daily donations for current month
+        const currentDate = new Date();
+        const monthStart = startOfMonth(currentDate);
+        const monthEnd = endOfMonth(currentDate);
+        const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+        const dailyCounts: Record<string, number> = {};
+        donations?.forEach(donation => {
+          const donationDate = new Date(donation.date);
+          if (donationDate >= monthStart && donationDate <= monthEnd) {
+            const dateKey = format(donationDate, 'yyyy-MM-dd');
+            dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
           }
-        }
+        });
+
+        const dailyChartData = daysInMonth.map(day => ({
+          date: format(day, 'MMM dd'),
+          count: dailyCounts[format(day, 'yyyy-MM-dd')] || 0
+        }));
+
+        setDailyDonations(dailyChartData);
+
+      } catch (error) {
+        console.error('Error in fetchAnalyticsData:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Top 5 donors
-      const topDonors = Object.values(donorMap)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+    fetchAnalyticsData();
 
-      // Top demand groups
-      const topGroups = Object.entries(groupDemand)
-        .map(([blood_type, count]) => ({ blood_type, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-      const newStats = {
-        monthly: monthTotal,
-        yearly: yearTotal,
-        byGroup: groupMap,
-        topGroups,
-        topDonors,
-      };
-
-      console.log('Final analytics stats:', newStats);
-      setDonationStats(newStats);
-
-    } catch (error) {
-      console.error("Error fetching analytics statistics:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, [donors]);
-
-  // Listen for donation updates with improved logging
-  useEffect(() => {
-    const handleDonationAdded = (event: any) => {
-      console.log('Donation analytics refresh event received:', event.detail);
-      
-      // Add delay to ensure database has been updated
-      setTimeout(() => {
-        console.log('Refreshing analytics after donation event...');
-        fetchStats();
-      }, 1000);
+    // Listen for donation events to refresh data
+    const handleDonationAdded = () => {
+      fetchAnalyticsData();
     };
 
     window.addEventListener('donationAdded', handleDonationAdded);
-    
-    return () => {
-      window.removeEventListener('donationAdded', handleDonationAdded);
-    };
+    return () => window.removeEventListener('donationAdded', handleDonationAdded);
   }, []);
 
-  if (loading) return <div className="flex justify-center py-6">Loading analytics...</div>;
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[1, 2, 3].map(i => (
+          <Card key={i}>
+            <CardHeader>
+              <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-32 bg-gray-200 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Top Row - Monthly and Yearly Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 flex flex-col gap-2 justify-center items-center">
-          <span className="text-xs text-gray-600">This Month</span>
-          <span className="text-xl font-bold text-blood">{donationStats.monthly}</span>
-          <span className="text-xs text-gray-600">Donations</span>
-        </Card>
-        <Card className="p-4 flex flex-col gap-2 justify-center items-center">
-          <span className="text-xs text-gray-600">This Year</span>
-          <span className="text-xl font-bold text-blue-600">{donationStats.yearly}</span>
-          <span className="text-xs text-gray-600">Donations</span>
-        </Card>
-        
-        {/* Blood Group Chart */}
-        <Card className="p-4 sm:col-span-2">
-          <div className="font-semibold mb-2 text-center text-blood">Blood Group Distribution</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={bloodGroups.map(bg => ({
-              blood_type: bg,
-              count: donationStats.byGroup[bg] || 0,
-            }))}>
-              <XAxis dataKey="blood_type" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#ed2222" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-
-      {/* Bottom Row - In-demand Groups and Top Donors */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* In-demand Blood Groups Card */}
-        <Card className="p-4 flex flex-col gap-2">
-          <div className="mb-1 font-semibold text-center text-blood">In-demand Blood Groups</div>
-          <ol className="text-sm space-y-1">
-            {donationStats.topGroups.length === 0 ? (
-              <li className="text-center text-gray-500">No pending requests</li>
-            ) : (
-              donationStats.topGroups.map((g, i) => (
-                <li key={g.blood_type} className="flex justify-between items-center">
-                  <span>{i+1}. {g.blood_type}</span>
-                  <span className="text-gray-500">({g.count} requests)</span>
-                </li>
-              ))
-            )}
-          </ol>
+      <h2 className="text-2xl font-bold text-gray-800">Analytics Dashboard</h2>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly Blood Group Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>📊 Monthly Blood Group Donations</CardTitle>
+            <CardDescription>Donation counts by blood group</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={bloodGroupData}>
+                  <XAxis 
+                    dataKey="bloodGroup" 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="count" 
+                    fill="var(--color-count)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
         </Card>
 
-        {/* Top Active Donors Card */}
-        <Card className="p-4 flex flex-col gap-2">
-          <div className="font-semibold mb-1 text-center text-blood">Top Active Donors</div>
-          <ol className="text-sm space-y-1">
-            {donationStats.topDonors.length === 0 ? (
-              <li className="text-center text-gray-500">No donations recorded</li>
-            ) : (
-              donationStats.topDonors.map((d, i) => (
-                <li key={d.email} className="flex justify-between items-center">
-                  <span className="truncate">{i+1}. {d.name}</span>
-                  <span className="text-gray-500">({d.count})</span>
-                </li>
-              ))
-            )}
-          </ol>
+        {/* Top Active Donors */}
+        <Card>
+          <CardHeader>
+            <CardTitle>🏆 Top Active Donors</CardTitle>
+            <CardDescription>Leading donors by donation count</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-48 overflow-y-auto">
+              {topDonors.length > 0 ? (
+                topDonors.map((donor, index) => (
+                  <div key={donor.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm">#{index + 1}</span>
+                      <div>
+                        <div className="font-medium text-sm">{donor.name}</div>
+                        <Badge variant="outline" className="text-xs">
+                          {donor.bloodGroup}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Badge className="bg-blue-100 text-blue-800">
+                      {donor.donationCount} donations
+                    </Badge>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500 text-sm">No donation data available</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Daily Donations Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>📈 Daily Donations This Month</CardTitle>
+            <CardDescription>Daily donation trends</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyDonations}>
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#ef4444" 
+                    strokeWidth={2}
+                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: "#ef4444", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
         </Card>
       </div>
     </div>

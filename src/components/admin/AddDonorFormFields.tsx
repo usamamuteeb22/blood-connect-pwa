@@ -12,7 +12,7 @@ interface AddDonorFormFieldsProps {
 }
 
 const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsProps) => {
-  const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  const bloodTypes = ["A+", "A-", "A1", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
   return (
     <>
@@ -24,7 +24,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
             id="name"
             value={formData.name}
             onChange={(e) => handleInputChange("name", e.target.value)}
-            placeholder="John Doe"
+            placeholder="Enter Donor Name"
             required
           />
         </div>
@@ -48,7 +48,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
             id="phone"
             value={formData.phone}
             onChange={(e) => handleInputChange("phone", e.target.value)}
-            placeholder="+1 (555) 123-4567"
+            placeholder="0300-0000000"
             required
           />
         </div>
@@ -104,7 +104,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
             id="city"
             value={formData.city}
             onChange={(e) => handleInputChange("city", e.target.value)}
-            placeholder="New York"
+            placeholder="Enter City Name"
             required
           />
         </div>
@@ -129,7 +129,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
           id="address"
           value={formData.address}
           onChange={(e) => handleInputChange("address", e.target.value)}
-          placeholder="123 Main Street, Apt 4B, New York, NY 10001"
+          placeholder="Enter Donor Address"
           rows={3}
         />
         <p className="text-xs text-gray-500">Optional - leave empty if unknown</p>
