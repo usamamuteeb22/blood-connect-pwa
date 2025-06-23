@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -53,7 +52,7 @@ const chartConfig = {
 
 const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
   const [bloodGroupData, setBloodGroupData] = useState<BloodGroupData[]>([]);
-  const [topDonors, setTop DonorsState] = useState<TopDonor[]>([]);
+  const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
   const [dailyDonations, setDailyDonations] = useState<DailyDonation[]>([]);
   const [loading, setLoading] = useState(true);
 
