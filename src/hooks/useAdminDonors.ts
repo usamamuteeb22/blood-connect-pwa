@@ -22,11 +22,18 @@ export const useAdminDonors = () => {
     try {
       const { data, error } = await supabase
         .from('donors')
-        .select('*')
+        .select('*, last_donation_date')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDonors(data || []);
+      
+      // Transform data to ensure last_donation_date is included
+      const donorsWithLastDonation = (data || []).map(donor => ({
+        ...donor,
+        last_donation_date: donor.last_donation_date || null
+      }));
+      
+      setDonors(donorsWithLastDonation);
     } catch (error) {
       console.error('Error fetching donors:', error);
     } finally {
@@ -81,7 +88,7 @@ export const useAdminDonors = () => {
     // Multi-field filter: search by name/email/phone
     if (searchQuery.value && searchQuery.field) {
       filtered = filtered.filter(donor =>
-        donor[searchQuery.field]?.toLowerCase().includes(searchQuery.value.toLowerCase())
+        donor[searchQuery.field as keyof Donor]?.toString().toLowerCase().includes(searchQuery.value.toLowerCase())
       );
     }
     // Location filter: city/address

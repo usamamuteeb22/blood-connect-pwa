@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +8,7 @@ const fetchDonorProfile = async (userId: string): Promise<Donor | null> => {
   try {
     const { data, error } = await supabase
       .from('donors')
-      .select('*')
+      .select('*, last_donation_date')
       .eq('user_id', userId)
       .maybeSingle();
       
@@ -18,7 +17,14 @@ const fetchDonorProfile = async (userId: string): Promise<Donor | null> => {
       return null;
     }
     
-    return data;
+    if (data) {
+      return {
+        ...data,
+        last_donation_date: data.last_donation_date || null
+      };
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error fetching donor profile:', error);
     return null;

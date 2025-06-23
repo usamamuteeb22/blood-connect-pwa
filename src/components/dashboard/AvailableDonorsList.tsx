@@ -28,16 +28,21 @@ const AvailableDonorsList = ({ onDonorSelect }: AvailableDonorsListProps) => {
     const fetchDonors = async () => {
       setLoading(true);
       try {
-        // Fetch all eligible donors
+        // Fetch all eligible donors with last_donation_date
         const { data, error } = await supabase
           .from('donors')
-          .select('*')
+          .select('*, last_donation_date')
           .eq('is_eligible', true);
           
         if (error) throw error;
         
         if (data) {
-          setDonors(data as Donor[]);
+          // Transform data to ensure last_donation_date is included
+          const donorsWithLastDonation = data.map(donor => ({
+            ...donor,
+            last_donation_date: donor.last_donation_date || null
+          }));
+          setDonors(donorsWithLastDonation);
         }
       } catch (error) {
         console.error("Error fetching donors:", error);

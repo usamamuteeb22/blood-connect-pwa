@@ -1,4 +1,3 @@
-
 // Custom type definitions for the application
 
 export interface UserProfile {

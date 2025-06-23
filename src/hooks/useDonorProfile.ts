@@ -14,10 +14,10 @@ export const useDonorProfile = (id: string | undefined) => {
     try {
       console.log(`Fetching donor profile for ID: ${id}`);
       
-      // Fetch donor details
+      // Fetch donor details with last_donation_date
       const { data: donorData, error: donorError } = await supabase
         .from('donors')
-        .select('*')
+        .select('*, last_donation_date')
         .eq('id', id)
         .single();
       
@@ -27,7 +27,11 @@ export const useDonorProfile = (id: string | undefined) => {
       }
       
       console.log("Fetched donor:", donorData);
-      setDonor(donorData);
+      const donorWithLastDonation = {
+        ...donorData,
+        last_donation_date: donorData.last_donation_date || null
+      };
+      setDonor(donorWithLastDonation);
 
       // Fetch donations for this specific donor only
       const { data: donationsData, error: donationsError } = await supabase
@@ -104,6 +108,16 @@ export const useDonorProfile = (id: string | undefined) => {
 
       console.log("Donation successfully inserted:", newDonation);
 
+      // Update donor's last_donation_date
+      const { error: updateError } = await supabase
+        .from('donors')
+        .update({ last_donation_date: currentDate })
+        .eq('id', donor.id);
+
+      if (updateError) {
+        console.error("Failed to update last donation date:", updateError);
+      }
+
       // Refresh the profile data immediately
       await fetchProfile();
 
@@ -142,6 +156,16 @@ export const useDonorProfile = (id: string | undefined) => {
       if (error) {
         console.error("Reset donations error:", error);
         throw error;
+      }
+      
+      // Reset last_donation_date
+      const { error: updateError } = await supabase
+        .from('donors')
+        .update({ last_donation_date: null })
+        .eq('id', donor.id);
+
+      if (updateError) {
+        console.error("Failed to reset last donation date:", updateError);
       }
       
       console.log("Donations reset successfully");

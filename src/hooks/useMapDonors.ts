@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Donor } from '@/types/custom';
@@ -31,7 +32,7 @@ export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter, city 
     try {
       let query = supabase
         .from('donors')
-        .select('*')
+        .select('*, last_donation_date')
         .eq('is_eligible', true);
 
       // Apply city filter if provided
@@ -52,40 +53,50 @@ export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter, city 
         throw fetchError;
       }
 
-      let processedDonors: MapDonorResult[] = data || [];
+      let processedDonors: MapDonorResult[] = [];
 
-      // Calculate real distances if we have current position
-      if (currentPosition && data) {
-        processedDonors = data.map(donor => {
-          let distance: number | undefined;
-          
-          // Calculate real distance using coordinates
-          if (isValidCoordinate(donor.latitude, donor.longitude)) {
-            distance = calculateDistance(
-              currentPosition.lat,
-              currentPosition.lng,
-              donor.latitude!,
-              donor.longitude!
-            );
-          }
-          
-          return {
-            ...donor,
-            distance,
-          };
-        })
-        // Filter by radius if distance was calculated
-        .filter(donor => {
-          if (donor.distance === undefined) return true; // Include donors without coordinates
-          return donor.distance <= radiusKm;
-        })
-        // Sort by distance (donors without coordinates at the end)
-        .sort((a, b) => {
-          if (a.distance === undefined && b.distance === undefined) return 0;
-          if (a.distance === undefined) return 1;
-          if (b.distance === undefined) return -1;
-          return a.distance - b.distance;
-        });
+      if (data) {
+        // Transform data to ensure last_donation_date is included
+        const donorsWithLastDonation = data.map(donor => ({
+          ...donor,
+          last_donation_date: donor.last_donation_date || null
+        }));
+
+        processedDonors = donorsWithLastDonation;
+
+        // Calculate real distances if we have current position
+        if (currentPosition) {
+          processedDonors = donorsWithLastDonation.map(donor => {
+            let distance: number | undefined;
+            
+            // Calculate real distance using coordinates
+            if (isValidCoordinate(donor.latitude, donor.longitude)) {
+              distance = calculateDistance(
+                currentPosition.lat,
+                currentPosition.lng,
+                donor.latitude!,
+                donor.longitude!
+              );
+            }
+            
+            return {
+              ...donor,
+              distance,
+            };
+          })
+          // Filter by radius if distance was calculated
+          .filter(donor => {
+            if (donor.distance === undefined) return true; // Include donors without coordinates
+            return donor.distance <= radiusKm;
+          })
+          // Sort by distance (donors without coordinates at the end)
+          .sort((a, b) => {
+            if (a.distance === undefined && b.distance === undefined) return 0;
+            if (a.distance === undefined) return 1;
+            if (b.distance === undefined) return -1;
+            return a.distance - b.distance;
+          });
+        }
       }
 
       setDonors(processedDonors);

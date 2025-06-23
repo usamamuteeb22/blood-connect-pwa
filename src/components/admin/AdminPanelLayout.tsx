@@ -77,7 +77,7 @@ const AdminPanelLayout = () => {
           setShowAddDialog={setShowAddDialog}
           startDate={startDate}
           setStartDate={setStartDate}
-          endDate={setEndDate}
+          endDate={endDate}
           setEndDate={setEndDate}
           downloadLoading={downloadLoading}
           onRefresh={fetchDonors}
