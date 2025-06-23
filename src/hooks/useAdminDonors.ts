@@ -22,7 +22,7 @@ export const useAdminDonors = () => {
     try {
       const { data, error } = await supabase
         .from('donors')
-        .select('*, last_donation_date')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,14 +50,14 @@ export const useAdminDonors = () => {
       let query = supabase
         .from('donations')
         .select('*')
-        .order('donation_date', { ascending: false });
+        .order('date', { ascending: false });
 
       // Apply date filters if provided
       if (startDate) {
-        query = query.gte('donation_date', startDate);
+        query = query.gte('date', startDate);
       }
       if (endDate) {
-        query = query.lte('donation_date', endDate);
+        query = query.lte('date', endDate);
       }
 
       const { data, error } = await query;

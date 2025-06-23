@@ -122,6 +122,7 @@ export type Database = {
           geom: unknown | null
           id: string
           is_eligible: boolean
+          last_donation_date: string | null
           latitude: number | null
           longitude: number | null
           name: string
@@ -141,6 +142,7 @@ export type Database = {
           geom?: unknown | null
           id?: string
           is_eligible?: boolean
+          last_donation_date?: string | null
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -160,6 +162,7 @@ export type Database = {
           geom?: unknown | null
           id?: string
           is_eligible?: boolean
+          last_donation_date?: string | null
           latitude?: number | null
           longitude?: number | null
           name?: string

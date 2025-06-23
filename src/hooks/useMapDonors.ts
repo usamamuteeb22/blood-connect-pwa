@@ -32,7 +32,7 @@ export function useMapDonors({ currentPosition, radiusKm, bloodTypeFilter, city 
     try {
       let query = supabase
         .from('donors')
-        .select('*, last_donation_date')
+        .select('*')
         .eq('is_eligible', true);
 
       // Apply city filter if provided

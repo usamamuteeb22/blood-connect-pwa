@@ -31,7 +31,7 @@ const AvailableDonorsList = ({ onDonorSelect }: AvailableDonorsListProps) => {
         // Fetch all eligible donors with last_donation_date
         const { data, error } = await supabase
           .from('donors')
-          .select('*, last_donation_date')
+          .select('*')
           .eq('is_eligible', true);
           
         if (error) throw error;

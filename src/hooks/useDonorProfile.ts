@@ -17,7 +17,7 @@ export const useDonorProfile = (id: string | undefined) => {
       // Fetch donor details with last_donation_date
       const { data: donorData, error: donorError } = await supabase
         .from('donors')
-        .select('*, last_donation_date')
+        .select('*')
         .eq('id', id)
         .single();
       
