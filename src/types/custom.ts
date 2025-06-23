@@ -33,6 +33,7 @@ export interface Donor {
   next_eligible_date: string;
   is_eligible: boolean;
   availability: boolean;
+  last_donation_date: string | null;
   created_at: string;
 }
 

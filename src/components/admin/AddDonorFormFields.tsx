@@ -108,6 +108,18 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
             required
           />
         </div>
+
+        {/* Last Donation Date */}
+        <div className="space-y-2">
+          <Label htmlFor="last_donation_date">Last Donation Date</Label>
+          <Input
+            id="last_donation_date"
+            type="date"
+            value={formData.last_donation_date}
+            onChange={(e) => handleInputChange("last_donation_date", e.target.value)}
+          />
+          <p className="text-xs text-gray-500">Optional - leave empty if this is first donation</p>
+        </div>
       </div>
 
       {/* Address - optional */}

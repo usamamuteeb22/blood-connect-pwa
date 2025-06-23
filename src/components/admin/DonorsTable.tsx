@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash2, Phone } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import type { Donor } from "@/types/custom"; // Force usage from central types
+import type { Donor } from "@/types/custom";
 
 interface DonorsTableProps {
   donors: Donor[];
@@ -16,7 +16,7 @@ interface DonorsTableProps {
   clickableRows?: boolean;
 }
 
-const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { clickableRows?: boolean }) => {
+const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps) => {
   const [sortField, setSortField] = useState<keyof Donor>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -40,21 +40,6 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
     return 0;
   });
 
-  const handleToggleStatus = async (donorId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('donors')
-        .update({ is_eligible: !currentStatus })
-        .eq('id', donorId);
-
-      if (error) throw error;
-
-      onRefresh();
-    } catch (error) {
-      console.error('Error updating donor status:', error);
-    }
-  };
-
   const handleDelete = async (donorId: string) => {
     if (!confirm('Are you sure you want to delete this donor?')) return;
 
@@ -70,6 +55,20 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
     } catch (error) {
       console.error('Error deleting donor:', error);
     }
+  };
+
+  const calculateEligibility = (lastDonationDate: string | null) => {
+    if (!lastDonationDate) {
+      return { eligible: true, label: "✅ Eligible" };
+    }
+    
+    const daysSinceLastDonation = differenceInDays(new Date(), new Date(lastDonationDate));
+    const eligible = daysSinceLastDonation >= 90;
+    
+    return {
+      eligible,
+      label: eligible ? "✅ Eligible" : "❌ Not Eligible"
+    };
   };
 
   const SortableHeader = ({ field, children }: { field: keyof Donor; children: React.ReactNode }) => (
@@ -103,100 +102,111 @@ const DonorsTable = ({ donors, onRefresh, clickableRows }: DonorsTableProps & { 
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-16 px-2">#</TableHead>
             <TableHead className="w-12 px-2">Call</TableHead>
             <SortableHeader field="name">Name</SortableHeader>
-            <SortableHeader field="email">Email</SortableHeader>
             <SortableHeader field="age">Age</SortableHeader>
             <SortableHeader field="phone">Phone</SortableHeader>
             <SortableHeader field="blood_type">Blood</SortableHeader>
             <SortableHeader field="city">City</SortableHeader>
             <TableHead className="min-w-[200px]">Address</TableHead>
+            <SortableHeader field="last_donation_date">Last Donation</SortableHeader>
             <SortableHeader field="created_at">Registered</SortableHeader>
-            <SortableHeader field="is_eligible">Status</SortableHeader>
+            <TableHead>Eligibility</TableHead>
             <TableHead className="w-12 px-2">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedDonors.map((donor) => (
-            <TableRow
-              key={donor.id}
-              className={clickableRows ? "cursor-pointer hover:bg-blue-50" : ""}
-              onClick={clickableRows ? () => navigate(`/admin/donor/${donor.id}`) : undefined}
-            >
-              <TableCell className="px-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(`tel:${donor.phone}`, '_blank');
-                  }}
-                  className="h-8 w-8 p-0 hover:bg-green-50 hover:border-green-300"
-                >
-                  <Phone className="h-4 w-4 text-green-600" />
-                </Button>
-              </TableCell>
-              <TableCell className="font-medium px-2">{donor.name}</TableCell>
-              <TableCell className="px-2">{donor.email}</TableCell>
-              <TableCell className="px-2">{donor.age}</TableCell>
-              <TableCell className="px-2">{donor.phone}</TableCell>
-              <TableCell className="px-2">
-                <Badge variant="outline" className="bg-blood/10 text-blood border-blood/20">
-                  {donor.blood_type}
-                </Badge>
-              </TableCell>
-              <TableCell className="px-2">{donor.city}</TableCell>
-              <TableCell className="px-2 min-w-[200px]" title={donor.address}>
-                <div className="max-w-[200px] break-words">
-                  {donor.address}
-                </div>
-              </TableCell>
-              <TableCell className="px-2">
-                {donor.created_at ? 
-                  format(new Date(donor.created_at), 'MMM dd, yyyy') : 
-                  <span>-</span>
-                }
-              </TableCell>
-              <TableCell className="px-2">
-                <Badge 
-                  variant={donor.is_eligible ? "default" : "secondary"}
-                  className={donor.is_eligible ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
-                >
-                  {donor.is_eligible ? "Active" : "Inactive"}
-                </Badge>
-              </TableCell>
-              <TableCell className="px-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleToggleStatus(donor.id, donor.is_eligible);
-                      }}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      {donor.is_eligible ? 'Inactive' : 'Activate'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleDelete(donor.id);
-                      }}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
+          {sortedDonors.map((donor, index) => {
+            const eligibility = calculateEligibility(donor.last_donation_date);
+            
+            return (
+              <TableRow
+                key={donor.id}
+                className={clickableRows ? "cursor-pointer hover:bg-blue-50" : ""}
+                onClick={clickableRows ? () => navigate(`/admin/donor/${donor.id}`) : undefined}
+              >
+                <TableCell className="px-2 font-medium">{index + 1}</TableCell>
+                <TableCell className="px-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(`tel:${donor.phone}`, '_blank');
+                    }}
+                    className="h-8 w-8 p-0 hover:bg-green-50 hover:border-green-300"
+                  >
+                    <Phone className="h-4 w-4 text-green-600" />
+                  </Button>
+                </TableCell>
+                <TableCell className="font-medium px-2">{donor.name}</TableCell>
+                <TableCell className="px-2">{donor.age}</TableCell>
+                <TableCell className="px-2">{donor.phone}</TableCell>
+                <TableCell className="px-2">
+                  <Badge variant="outline" className="bg-blood/10 text-blood border-blood/20">
+                    {donor.blood_type}
+                  </Badge>
+                </TableCell>
+                <TableCell className="px-2">{donor.city}</TableCell>
+                <TableCell className="px-2 min-w-[200px]" title={donor.address}>
+                  <div className="max-w-[200px] break-words">
+                    {donor.address}
+                  </div>
+                </TableCell>
+                <TableCell className="px-2">
+                  {donor.last_donation_date ? 
+                    format(new Date(donor.last_donation_date), 'MMM dd, yyyy') : 
+                    <span className="text-gray-400">Never</span>
+                  }
+                </TableCell>
+                <TableCell className="px-2">
+                  {donor.created_at ? 
+                    format(new Date(donor.created_at), 'MMM dd, yyyy') : 
+                    <span>-</span>
+                  }
+                </TableCell>
+                <TableCell className="px-2">
+                  <Badge 
+                    variant={eligibility.eligible ? "default" : "secondary"}
+                    className={eligibility.eligible ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                  >
+                    {eligibility.label}
+                  </Badge>
+                </TableCell>
+                <TableCell className="px-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={e => {
+                          e.stopPropagation();
+                          navigate(`/admin/donor/${donor.id}`);
+                        }}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleDelete(donor.id);
+                        }}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

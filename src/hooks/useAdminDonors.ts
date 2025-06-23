@@ -12,7 +12,9 @@ export const useAdminDonors = () => {
   const [locationQuery, setLocationQuery] = useState({ city: "", address: "" });
   const [bloodGroupFilter, setBloodGroupFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [exportAllLoading, setExportAllLoading] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   // Fetch donors
   const fetchDonors = async () => {
@@ -32,28 +34,44 @@ export const useAdminDonors = () => {
     }
   };
 
-  // Export all donations as Excel
-  const handleExportAllDonations = async () => {
-    setExportAllLoading(true);
-    toast.info("Fetching all donations for export...");
+  // Download filtered donations as Excel
+  const handleDownloadDonations = async () => {
+    setDownloadLoading(true);
+    toast.info("Fetching donations for export...");
+    
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('donations')
         .select('*')
-        .order('date', { ascending: false });
+        .order('donation_date', { ascending: false });
+
+      // Apply date filters if provided
+      if (startDate) {
+        query = query.gte('donation_date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('donation_date', endDate);
+      }
+
+      const { data, error } = await query;
+      
       if (error) throw error;
+      
       if (!data || data.length === 0) {
-        toast.warning("No donations to export.");
+        toast.warning("No donations found for the selected date range.");
       } else {
         const mod = await import('@/utils/exportUtils');
-        await mod.exportToExcel(data, 'all-donations');
-        toast.success("Exported all donations as Excel!");
+        const filename = startDate || endDate 
+          ? `donations-${startDate || 'start'}-to-${endDate || 'end'}`
+          : 'filtered-donations';
+        await mod.exportToExcel(data, filename);
+        toast.success(`Exported ${data.length} donations as Excel!`);
       }
     } catch (err) {
-      toast.error("Failed to export all donations.");
+      toast.error("Failed to export donations.");
       console.error(err);
     }
-    setExportAllLoading(false);
+    setDownloadLoading(false);
   };
 
   // Filtering logic: advanced search & location-based & blood group, all must combine
@@ -98,8 +116,12 @@ export const useAdminDonors = () => {
     setBloodGroupFilter,
     showAddDialog,
     setShowAddDialog,
-    exportAllLoading,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    downloadLoading,
     fetchDonors,
-    handleExportAllDonations,
+    handleDownloadDonations,
   };
 };

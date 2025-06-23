@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import DonorSearchFilters from "./DonorSearchFilters";
 import DonorsTable from "./DonorsTable";
 import AddDonorDialog from "./AddDonorDialog";
+import DonorFilters from "./DonorFilters";
 import type { Donor } from "@/types/custom";
 
 interface DonorManagementSectionProps {
@@ -17,9 +18,13 @@ interface DonorManagementSectionProps {
   setBloodGroupFilter: (bloodGroup: string) => void;
   showAddDialog: boolean;
   setShowAddDialog: (show: boolean) => void;
-  exportAllLoading: boolean;
+  startDate: string;
+  setStartDate: (date: string) => void;
+  endDate: string;
+  setEndDate: (date: string) => void;
+  downloadLoading: boolean;
   onRefresh: () => void;
-  onExportAllDonations: () => void;
+  onDownloadDonations: () => void;
 }
 
 const DonorManagementSection = ({
@@ -33,9 +38,13 @@ const DonorManagementSection = ({
   setBloodGroupFilter,
   showAddDialog,
   setShowAddDialog,
-  exportAllLoading,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  downloadLoading,
   onRefresh,
-  onExportAllDonations,
+  onDownloadDonations,
 }: DonorManagementSectionProps) => {
   return (
     <>
@@ -53,13 +62,6 @@ const DonorManagementSection = ({
               >
                 + Add Donor
               </Button>
-              <Button
-                variant="outline"
-                onClick={onExportAllDonations}
-                disabled={exportAllLoading}
-              >
-                {exportAllLoading ? "Exporting..." : "Export ALL Donations (Excel)"}
-              </Button>
             </div>
           </div>
 
@@ -71,6 +73,16 @@ const DonorManagementSection = ({
             setLocationQuery={setLocationQuery}
             bloodGroupFilter={bloodGroupFilter}
             setBloodGroupFilter={setBloodGroupFilter}
+          />
+
+          {/* Date Range Filter & Download */}
+          <DonorFilters
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onDownloadDonations={onDownloadDonations}
+            downloadLoading={downloadLoading}
           />
 
           {/* Results Info + CSV export */}

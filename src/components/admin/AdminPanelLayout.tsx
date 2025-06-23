@@ -23,9 +23,13 @@ const AdminPanelLayout = () => {
     setBloodGroupFilter,
     showAddDialog,
     setShowAddDialog,
-    exportAllLoading,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    downloadLoading,
     fetchDonors,
-    handleExportAllDonations,
+    handleDownloadDonations,
   } = useAdminDonors();
 
   useEffect(() => {
@@ -71,9 +75,13 @@ const AdminPanelLayout = () => {
           setBloodGroupFilter={setBloodGroupFilter}
           showAddDialog={showAddDialog}
           setShowAddDialog={setShowAddDialog}
-          exportAllLoading={exportAllLoading}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={setEndDate}
+          setEndDate={setEndDate}
+          downloadLoading={downloadLoading}
           onRefresh={fetchDonors}
-          onExportAllDonations={handleExportAllDonations}
+          onDownloadDonations={handleDownloadDonations}
         />
       </div>
     </div>
