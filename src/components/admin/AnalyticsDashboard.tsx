@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -168,7 +169,7 @@ const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {[1, 2, 3].map(i => (
           <Card key={i}>
             <CardHeader>
@@ -185,27 +186,28 @@ const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">Analytics Dashboard</h2>
+      <h2 className="text-xl md:text-2xl font-bold text-gray-800">Analytics Dashboard</h2>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* First row - Two charts side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Monthly Blood Group Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>📊 Monthly Blood Group Donations</CardTitle>
-            <CardDescription>Donation counts by blood group</CardDescription>
+        <Card className="w-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg">📊 Monthly Blood Group Donations</CardTitle>
+            <CardDescription className="text-sm">Donation counts by blood group</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-48">
+            <ChartContainer config={chartConfig} className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={bloodGroupData}>
+                <BarChart data={bloodGroupData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <XAxis 
                     dataKey="bloodGroup" 
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 10 }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis 
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 10 }}
                     tickLine={false}
                     axisLine={false}
                   />
@@ -222,26 +224,26 @@ const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
         </Card>
 
         {/* Top Active Donors */}
-        <Card>
-          <CardHeader>
-            <CardTitle>🏆 Top Active Donors</CardTitle>
-            <CardDescription>Leading donors by donation count</CardDescription>
+        <Card className="w-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg">🏆 Top Active Donors</CardTitle>
+            <CardDescription className="text-sm">Leading donors by donation count</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-48 overflow-y-auto">
+            <div className="space-y-2 md:space-y-3 max-h-48 md:max-h-64 overflow-y-auto">
               {topDonors.length > 0 ? (
                 topDonors.map((donor, index) => (
-                  <div key={donor.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">#{index + 1}</span>
-                      <div>
-                        <div className="font-medium text-sm">{donor.name}</div>
-                        <Badge variant="outline" className="text-xs">
+                  <div key={donor.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="font-semibold text-xs">#{index + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-xs md:text-sm truncate">{donor.name}</div>
+                        <Badge variant="outline" className="text-xs mt-1">
                           {donor.bloodGroup}
                         </Badge>
                       </div>
                     </div>
-                    <Badge className="bg-blue-100 text-blue-800">
+                    <Badge className="bg-blue-100 text-blue-800 text-xs whitespace-nowrap ml-2">
                       {donor.donationCount} donations
                     </Badge>
                   </div>
@@ -252,25 +254,29 @@ const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
             </div>
           </CardContent>
         </Card>
+      </div>
 
+      {/* Second row - Single chart full width */}
+      <div className="grid grid-cols-1">
         {/* Daily Donations Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>📈 Daily Donations This Month</CardTitle>
-            <CardDescription>Daily donation trends</CardDescription>
+        <Card className="w-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg">📈 Daily Donations This Month</CardTitle>
+            <CardDescription className="text-sm">Daily donation trends</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-48">
+            <ChartContainer config={chartConfig} className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyDonations}>
+                <LineChart data={dailyDonations} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <XAxis 
                     dataKey="date" 
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: 9 }}
                     tickLine={false}
                     axisLine={false}
+                    interval="preserveStartEnd"
                   />
                   <YAxis 
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 10 }}
                     tickLine={false}
                     axisLine={false}
                   />
@@ -280,8 +286,8 @@ const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
                     dataKey="count" 
                     stroke="#ef4444" 
                     strokeWidth={2}
-                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: "#ef4444", strokeWidth: 2 }}
+                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5, stroke: "#ef4444", strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
