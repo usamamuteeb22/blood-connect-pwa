@@ -256,38 +256,53 @@ const AnalyticsDashboard = ({ donors }: AnalyticsDashboardProps) => {
         </Card>
       </div>
 
-      {/* Second row - Single chart full width */}
+      {/* Second row - Single chart full width with improved responsiveness */}
       <div className="grid grid-cols-1">
-        {/* Daily Donations Chart */}
+        {/* Daily Donations Chart - Enhanced responsive design */}
         <Card className="w-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg">📈 Daily Donations This Month</CardTitle>
-            <CardDescription className="text-sm">Daily donation trends</CardDescription>
+            <CardDescription className="text-sm">Daily donation trends for current month</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-48 md:h-64">
+          <CardContent className="px-2 sm:px-6">
+            <ChartContainer config={chartConfig} className="h-64 sm:h-72 md:h-80 lg:h-96 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyDonations} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <LineChart 
+                  data={dailyDonations} 
+                  margin={{ 
+                    top: 10, 
+                    right: 10, 
+                    left: 10, 
+                    bottom: 20 
+                  }}
+                >
                   <XAxis 
                     dataKey="date" 
                     tick={{ fontSize: 9 }}
                     tickLine={false}
                     axisLine={false}
                     interval="preserveStartEnd"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
                   <YAxis 
                     tick={{ fontSize: 10 }}
                     tickLine={false}
                     axisLine={false}
+                    width={30}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    labelFormatter={(value) => `Date: ${value}`}
+                  />
                   <Line 
                     type="monotone" 
                     dataKey="count" 
                     stroke="#ef4444" 
                     strokeWidth={2}
-                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 3 }}
-                    activeDot={{ r: 5, stroke: "#ef4444", strokeWidth: 2 }}
+                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: "#ef4444", strokeWidth: 2, fill: "#ffffff" }}
                   />
                 </LineChart>
               </ResponsiveContainer>

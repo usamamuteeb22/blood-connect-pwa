@@ -29,7 +29,7 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
           />
         </div>
 
-        {/* Email - optional */}
+        {/* Email - optional, no placeholder */}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -37,7 +37,6 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
             type="email"
             value={formData.email}
             onChange={(e) => handleInputChange("email", e.target.value)}
-            placeholder="john@example.com"
           />
         </div>
 
@@ -107,18 +106,6 @@ const AddDonorFormFields = ({ formData, handleInputChange }: AddDonorFormFieldsP
             placeholder="Enter City Name"
             required
           />
-        </div>
-
-        {/* Last Donation Date */}
-        <div className="space-y-2">
-          <Label htmlFor="last_donation_date">Last Donation Date</Label>
-          <Input
-            id="last_donation_date"
-            type="date"
-            value={formData.last_donation_date}
-            onChange={(e) => handleInputChange("last_donation_date", e.target.value)}
-          />
-          <p className="text-xs text-gray-500">Optional - leave empty if this is first donation</p>
         </div>
       </div>
 

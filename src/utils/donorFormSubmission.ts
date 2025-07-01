@@ -89,13 +89,13 @@ export const submitDonorForm = async (
   const donorData = {
     user_id: finalUserId,
     name: formData.name,
-    email: formData.email || null, // Now nullable
+    email: formData.email || null,
     phone: formData.phone,
     age: ageValidation.parsedAge!,
-    weight: weightValidation.parsedWeight || null, // Now nullable
+    weight: weightValidation.parsedWeight || null,
     blood_type: formData.blood_type,
     city: formData.city,
-    address: formData.address || null, // Now nullable
+    address: formData.address || null,
     is_eligible: formData.is_eligible,
     next_eligible_date: new Date().toISOString(),
     latitude: null,

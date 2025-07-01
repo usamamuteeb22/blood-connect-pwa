@@ -9,7 +9,6 @@ export interface DonorFormData {
   city: string;
   address: string;
   is_eligible: boolean;
-  last_donation_date: string;
 }
 
 export const initialFormData: DonorFormData = {
@@ -22,5 +21,4 @@ export const initialFormData: DonorFormData = {
   city: "",
   address: "",
   is_eligible: true,
-  last_donation_date: "",
 };
