@@ -45,10 +45,10 @@ const DonorTableRow = ({ donor, index, clickableRows, onDelete }: DonorTableRowP
       const lastDonationDate = new Date(donor.last_donation_date);
       const daysSinceLastDonation = differenceInDays(new Date(), lastDonationDate);
       
-      if (daysSinceLastDonation >= 56) { // 8 weeks = 56 days
+      if (daysSinceLastDonation >= 90) { // Changed from 56 to 90 days (3 months)
         return { status: 'Eligible', variant: 'default' as const };
       } else {
-        const daysUntilEligible = 56 - daysSinceLastDonation;
+        const daysUntilEligible = 90 - daysSinceLastDonation; // Changed from 56 to 90 days
         return { 
           status: `${daysUntilEligible} days`, 
           variant: 'secondary' as const 

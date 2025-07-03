@@ -18,7 +18,7 @@ const DonorEligibility = ({ nextEligibleDate }: DonorEligibilityProps) => {
   
   const eligibilityPercentage = () => {
     const daysLeft = calculateDaysLeft();
-    // Assuming 90 days between donations
+    // Changed from 90 days to match the new 90-day eligibility period
     const percentage = ((90 - daysLeft) / 90) * 100;
     return Math.min(Math.max(percentage, 0), 100);
   };
