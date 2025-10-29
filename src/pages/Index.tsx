@@ -12,7 +12,7 @@ const Index = () => {
       icon: "🔍",
     },
     {
-      title: "Request Bloodddd",
+      title: "Request Blood",
       description: "Submit requests for specific blood types",
       icon: "🩸",
     },
