@@ -40,7 +40,7 @@ const Index = () => {
           <div className="container mx-auto relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                Donate Khunn, <span className="text-blood">Save Lives</span>
+                Donate Khun, <span className="text-blood">Save Lives</span>
               </h1>
               <p className="text-lg md:text-xl text-gray-700 mb-8">
                 OneDrop connects blood donors with recipients in real-time. Join our community and help save lives with just one drop.
